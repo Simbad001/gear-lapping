@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta property="og:type" content="website">
 <meta property="og:title" content="Gear Mesh Simulator">
-<meta property="og:description" content="Spur, helical, spiral bevel, hypoid, worm and planetary: see and hear transmission error, mesh harmonics and sidebands, unlapped vs lapped.">
+<meta property="og:description" content="Spur, helical, straight bevel, spiral bevel, hypoid, worm and planetary: see and hear transmission error, mesh harmonics and sidebands, unlapped vs lapped.">
 <meta property="og:url" content="https://simbad001.github.io/gear-lapping/simulator/">
 <meta property="og:image" content="https://simbad001.github.io/gear-lapping/cover.jpg">
 <meta name="twitter:card" content="summary_large_image">
@@ -105,6 +105,7 @@ button:focus-visible{outline:2px solid var(--ink);outline-offset:2px}
   <div class="types" role="radiogroup" aria-label="Gear type">
     <input type="radio" name="type" id="tSpur" value="spur" checked><label for="tSpur">Spur</label>
     <input type="radio" name="type" id="tHel" value="helical"><label for="tHel">Helical</label>
+    <input type="radio" name="type" id="tStr" value="straight"><label for="tStr">Straight bevel</label>
     <input type="radio" name="type" id="tBev" value="bevel"><label for="tBev">Spiral bevel</label>
     <input type="radio" name="type" id="tHyp" value="hypoid"><label for="tHyp">Hypoid</label>
     <input type="radio" name="type" id="tWorm" value="worm"><label for="tWorm">Worm</label>
@@ -129,6 +130,14 @@ button:focus-visible{outline:2px solid var(--ink);outline-offset:2px}
         <div id="g3" hidden role="img" aria-label="3D model of the gear set. Drag to rotate, scroll or pinch to zoom.">
           <span class="ov" id="ov3hint" style="left:10px;top:8px">Drag to rotate · scroll to zoom · right-drag to pan</span>
           <span class="ov" id="ov3te" style="left:10px;bottom:8px"></span>
+          <span class="ov" id="ov3ax" style="right:10px;bottom:8px;text-align:right"></span>
+        </div>
+        <div class="btns" id="views3d" hidden style="margin-top:8px;align-items:center">
+          <span class="note" style="margin:0">View:</span>
+          <button class="btn" type="button" data-view="iso">3/4</button>
+          <button class="btn" type="button" data-view="top">Top</button>
+          <button class="btn" type="button" data-view="front">Front</button>
+          <button class="btn" type="button" data-view="side">Side</button>
         </div>
         <p class="note" id="note3d" hidden>Gold is marking compound; bare steel shows where the teeth have touched, which is the contact pattern. Unlapped: a small patch at the toe and tip edge. Lapped: a larger patch centred on the tooth. Illustrative, not measured. Teeth use spherical involute profiles and circular-arc (face-milled) tooth traces; the hypoid pinion position comes from tangent pitch cones with a Gleason-style offset correction.</p>
         <p class="typenote" id="typeNote"></p>
@@ -205,6 +214,8 @@ const TYPES={
     note:'<b>Spur.</b> Straight teeth meet across the whole face at once, and one or two teeth carry the load. Each engagement is a sharp step, so spur gears are the loudest type. Left: end view. Right: side view.'},
   helical:{label:'Helical',title:'Helical gear pair',z1:{min:8,max:40,v:12,l:'Pinion teeth'},z2:{min:20,max:80,v:37,l:'Gear teeth'},rpm:{min:300,max:6000,v:3000,l:'Pinion speed'},beta:{min:0,max:40,v:20,l:'Helix angle'},face:10,slide:1,anim:0.12,eff:'97–99 %',
     note:'<b>Helical.</b> Slanted teeth come into contact gradually, so the contact line sweeps across the face. With an overlap ratio above 1, several teeth share the load and the mesh tone drops. The helix also creates axial thrust.'},
+  straight:{label:'Straight bevel',title:'Straight bevel pair',z1:{min:8,max:40,v:20,l:'Pinion teeth'},z2:{min:8,max:80,v:20,l:'Gear teeth'},rpm:{min:300,max:6000,v:3000,l:'Pinion speed'},slide:1,anim:0.12,eff:'97–99 %',
+    note:'<b>Straight bevel.</b> Shafts at 90° with axes that meet at the cone apex. Straight teeth run toward the apex and engage across the whole face at once, like spur teeth, so they are louder than spiral bevels. With equal tooth counts the pair is a 1:1 miter set.'},
   bevel:{label:'Spiral bevel',title:'Spiral bevel set',z1:{min:8,max:40,v:12,l:'Pinion teeth'},z2:{min:20,max:80,v:37,l:'Ring gear teeth'},rpm:{min:300,max:6000,v:3000,l:'Pinion speed'},beta:{min:0,max:45,v:35,l:'Spiral angle'},face:8,slide:1.2,anim:0.12,eff:'96–99 %',
     note:'<b>Spiral bevel.</b> Shafts at 90° with axes that meet. Curved teeth overlap like helical teeth. Hardened sets are usually lapped as matched pairs, as in the article photo. Ring gear seen face-on, pinion lying across it.'},
   hypoid:{label:'Hypoid',title:'Hypoid set',z1:{min:8,max:40,v:12,l:'Pinion teeth'},z2:{min:20,max:80,v:37,l:'Ring gear teeth'},rpm:{min:300,max:6000,v:3000,l:'Pinion speed'},beta:{min:25,max:50,v:45,l:'Pinion spiral angle'},face:8,slide:3,anim:0.12,eff:'90–96 %',
@@ -314,9 +325,11 @@ function readouts(){
   const rows=[];
   if(isPair()){
     const g=gcd(c.z1,c.z2),w=S.type==='worm';
-    rows.push([w?'Worm shaft, f₁':'Pinion shaft, f₁',fmtHz(F.f1)],[w?'Wheel shaft, f₂':(S.type==='spur'||S.type==='helical'?'Gear shaft, f₂':'Ring gear shaft, f₂'),fmtHz(F.f2)],
+    rows.push([w?'Worm shaft, f₁':'Pinion shaft, f₁',fmtHz(F.f1)],[w?'Wheel shaft, f₂':(S.type==='spur'||S.type==='helical'||S.type==='straight'?'Gear shaft, f₂':'Ring gear shaft, f₂'),fmtHz(F.f2)],
       ['Gear-mesh frequency',fmtHz(F.fm)],['Ratio',(c.z2/c.z1).toFixed(3)+' : 1'],['Hunting-tooth frequency',fmtHz(F.fm*g/(c.z1*c.z2))]);
     const eps=epsOf();if(eps>0)rows.push([w?'Contact overlap (assumed)':'Overlap ratio εβ',eps.toFixed(2)]);
+    if(S.type==='straight'||S.type==='bevel'){const d2=Math.atan2(c.z2,c.z1),dg=r=>(r*180/Math.PI).toFixed(1)+'°';
+      rows.push(['Shaft angle','90°'],['Pitch angle, pinion / gear',dg(Math.PI/2-d2)+' / '+dg(d2)]);if(c.z1===c.z2)rows.push(['Pair type','1:1 miter'])}
     if(S.type==='hypoid'&&window.THREE){const D=bevelDesign(c,true),dg=r=>(r*180/Math.PI).toFixed(1)+'°';
       rows.push(['Pinion offset','14 % of ring Ø'],['Spiral angle, pinion / ring',dg(D.bp)+' / '+dg(D.bg)],['Pitch angle, pinion / ring',dg(D.d1)+' / '+dg(D.d2)])}
     if(w){const g2=Math.atan(c.z1/10),ph=Math.atan(0.05);rows.push(['Lead angle',(g2*180/Math.PI).toFixed(1)+'°'],['Efficiency, μ = 0.05','≈ '+Math.round(100*Math.tan(g2)/Math.tan(g2+ph))+' %'])}
@@ -445,7 +458,7 @@ function viewBevel(x,w,h,t,te,lap,F){
     x.lineWidth=k===0?2:1.1;x.strokeStyle=k===0?C.accent:C.edge;x.stroke()}
   x.lineWidth=lap?1.6:1;x.strokeStyle=lap?C.accent:C.edge;x.beginPath();x.moveTo(xh,ya-rh);x.lineTo(xt,ya-rt);x.lineTo(xt,ya+rt);x.lineTo(xh,ya+rh);x.closePath();x.stroke();
   glow(x,(xh+xt)/2,ya-(rh+rt)/2*0.2,Math.max(10,(rh+rt)/2),flash*Math.min(1,0.35+Math.abs(te)/12));
-  label(x,'Ring gear face-on · pinion '+(hyp?'offset below centre':'axis through centre'),8,6);
+  label(x,(S.type==='straight'?'Gear face-on':'Ring gear face-on')+' · pinion '+(hyp?'offset below centre':'axis through centre')+' · shafts at 90°',8,6);
   return 'TE '+(te>=0?'+':'−')+Math.abs(te).toFixed(2)+' µm';
 }
 function viewWorm(x,w,h,t,te,lap,F){
@@ -494,7 +507,7 @@ function drawGears(){
   const {x,w,h}=fit($('gears'));x.clearRect(0,0,w,h);
   const F=freqs(),t=realT(),te=samplers[S.finish]?samplers[S.finish](t):0,lap=S.finish==='lapped';
   if(isPair()){const k=Math.floor(F.fm*t);if(lastK!==null&&k!==lastK)flash=1;lastK=k}
-  const fn={spur:viewPair,helical:viewPair,bevel:viewBevel,hypoid:viewBevel,worm:viewWorm,planetary:viewPlanet}[S.type];
+  const fn={spur:viewPair,helical:viewPair,straight:viewBevel,bevel:viewBevel,hypoid:viewBevel,worm:viewWorm,planetary:viewPlanet}[S.type];
   const txt=fn(x,w,h,t,te,lap,F);
   label(x,txt,8,h-6,'left','bottom');
 }
@@ -603,7 +616,7 @@ if(document.fonts&&document.fonts.ready)document.fonts.ready.then(()=>{if(spec.u
 // ---------- 3D view ----------
 const has3D=(function(){try{if(!window.THREE||!THREE.OrbitControls)return false;const c=document.createElement('canvas');return !!(c.getContext('webgl')||c.getContext('experimental-webgl'))}catch(e){return false}})();
 let mode3d=false,R3=null;
-function note3d(){$('note3d').hidden=!(mode3d&&(S.type==='bevel'||S.type==='hypoid'))}
+function note3d(){$('note3d').hidden=!(mode3d&&(S.type==='straight'||S.type==='bevel'||S.type==='hypoid'))}
 function init3D(){
   const el=$('g3'),renderer=new THREE.WebGLRenderer({antialias:true});
   const touch=window.matchMedia('(pointer: coarse)').matches;
@@ -706,7 +719,7 @@ function loftSph(prof,holeTh,slices,colorFn){
 // Hypoid: offset angle lambda = asin(E/A) and ring pitch angle = spiral-bevel angle · cos(lambda) (Gleason-style blank design);
 // pinion spiral angle = ring spiral angle + offset angle between the two pitch-cone generatrices at M.
 function bevelDesign(c,hyp){
-  const V=THREE.Vector3,z1=c.z1,z2=c.z2,R2o=z2/2,E=hyp?0.14*2*R2o:0,beta=c.beta*Math.PI/180;
+  const V=THREE.Vector3,z1=c.z1,z2=c.z2,R2o=z2/2,E=hyp?0.14*2*R2o:0,straight=S.type==='straight',beta=straight?0:c.beta*Math.PI/180;
   let d2=Math.atan2(z2,z1);if(hyp)d2*=Math.cos(Math.asin(Math.min(0.9,E/(R2o+0.65*z1))));
   const A2=R2o/Math.sin(d2),F=0.3*A2,Rm2=A2-F/2,rm2=Rm2*Math.sin(d2),mm2=2*rm2/z2;
   let bp=beta,bg=beta,zeta=0,d=0,M,n,Q,apex,a1,eps=0;
@@ -724,8 +737,9 @@ function bevelDesign(c,hyp){
   const Rm1=M.distanceTo(apex),rm1=d*Math.sqrt(Math.sin(d2)**2+(Math.cos(d2)*Math.sin(zeta))**2);
   const d1=Math.acos(Math.min(1,M.clone().sub(apex).normalize().dot(a1))),rc=0.9*Rm2;
   const Z=a1,Xp=M.clone().sub(apex);Xp.addScaledVector(Z,-Xp.dot(Z)).normalize();const Yp=new V().crossVectors(Z,Xp);
-  const ring={z:z2,delta:d2,Rm:Rm2,hand:1,trace:arcTrace(Rm2,bg,rc),prof:bevelProfile(z2,d2,mm2,Rm2)};
-  const pin={z:z1,delta:d1,Rm:Rm1,trace:arcTrace(Rm1,bp,rc),prof:bevelProfile(z1,d1,2*rm1/z1,Rm1),X:Xp,Y:Yp,Z,apex};
+  const flatT=()=>0; // straight bevel: teeth run straight toward the apex
+  const ring={z:z2,delta:d2,Rm:Rm2,hand:1,trace:straight?flatT:arcTrace(Rm2,bg,rc),prof:bevelProfile(z2,d2,mm2,Rm2)};
+  const pin={z:z1,delta:d1,Rm:Rm1,trace:straight?flatT:arcTrace(Rm1,bp,rc),prof:bevelProfile(z1,d1,2*rm1/z1,Rm1),X:Xp,Y:Yp,Z,apex};
   // pinion hand: pick the one whose tooth trace at M runs parallel to the ring's
   const Xr=new V(1,0,0),Yr=new V(0,0,-1),Zr=new V(0,1,0);
   const trDir=(g,X,Y,Zv,o,h)=>{const p=s=>{const ph=h*g.trace(s)/Math.sin(g.delta)+(g===ring?Math.atan2(M.dot(Yr),M.dot(Xr)):0),st=Math.sin(g.delta);
@@ -740,8 +754,8 @@ function bevelDesign(c,hyp){
 }
 function build3D(){
   const {root,M}=R3;
-  root.traverse(o=>{if(o.geometry)o.geometry.dispose();if(o.material&&o.material.isMeshBasicMaterial)o.material.dispose()});
-  root.clear();root.rotation.set(0,0,0);
+  root.traverse(o=>{if(o.geometry)o.geometry.dispose();if(o.material&&(o.material.isMeshBasicMaterial||o.isLine))o.material.dispose()});
+  root.clear();root.rotation.set(0,0,0);$('ov3ax').textContent='';
   const c=cfg(),P={f:[]},lap=S.finish==='lapped',Mesh=(g,m)=>new THREE.Mesh(g,m);R3.P=P;
   if(S.type==='spur'||S.type==='helical'){
     const z1=c.z1,z2=c.z2,face=10,tb=S.type==='helical'?Math.tan(c.beta*Math.PI/180):0,r1=z1/2,r2=z2/2;
@@ -750,7 +764,7 @@ function build3D(){
     P.p2=new THREE.Group();P.p2.add(Mesh(g2.geo,M.steel),Mesh(cyl(g2.hub*0.95,-face,face),M.dark));P.p2.position.x=r1+r2;
     const a1=tb/r1*face/2,a2=-tb/r2*face/2;markAt(P.p1,r1*Math.cos(a1),r1*Math.sin(a1),face/2+0.15,0.35);markAt(P.p2,r2*Math.cos(a2),r2*Math.sin(a2),face/2+0.15,0.35);
     root.add(P.p1,P.p2);P.f.push(flashBall(0.9));P.f[0].position.set(r1,0,0);
-  }else if(S.type==='bevel'||S.type==='hypoid'){
+  }else if(S.type==='straight'||S.type==='bevel'||S.type==='hypoid'){
     const D=bevelDesign(c,S.type==='hypoid'),V=THREE.Vector3;
     const pt=lap?{u:0.5,v:0.48,ru:0.34,rv:0.36}:{u:0.2,v:0.8,ru:0.15,rv:0.16};
     const cG=new THREE.Color(0xc9a227),cW=new THREE.Color(0xd2d9de),cS=new THREE.Color(0xa7b3bd);
@@ -772,6 +786,17 @@ function build3D(){
     root.add(frame(Pi.X,Pi.Y,Pi.Z,Pi.apex).add(P.p1));
     P.offR=D.offR;P.sR=D.sR;
     P.f.push(flashBall(1.1));P.f[0].position.copy(D.M);
+    // shaft axes (dashed) and the 90° shaft angle (gold corner); hypoid also shows the offset between the axes
+    const line=(a,b,mat)=>{const l=new THREE.Line(new THREE.BufferGeometry().setFromPoints([a,b]),mat);l.computeLineDistances();l.renderOrder=5;root.add(l)};
+    const dash=new THREE.LineDashedMaterial({color:0x7d8b97,dashSize:0.7,gapSize:0.45,depthTest:false,transparent:true,opacity:0.85});
+    const gold=new THREE.LineBasicMaterial({color:0xe0a63a,depthTest:false,transparent:true});
+    const Lx=D.A2*1.3,foot=new V(0,Pi.apex.y,0),k=0.13*D.A2,u=new V(0,1,0),w=Pi.Z.clone();
+    line(new V(0,-0.3*Lx,0),new V(0,Lx,0),dash);
+    line(Pi.apex.clone().addScaledVector(Pi.Z,-0.3*Lx),Pi.apex.clone().addScaledVector(Pi.Z,Lx),dash);
+    const cu=foot.clone().addScaledVector(u,k),cw=foot.clone().addScaledVector(w,k),cc=cu.clone().addScaledVector(w,k);
+    line(cu,cc,gold);line(cw,cc,gold);
+    if(D.E>0)line(foot,new V(0,Pi.apex.y,Pi.apex.z),gold);
+    $('ov3ax').textContent=D.E>0?'Shaft angle 90° · axes offset, they do not meet':'Shaft angle 90° · axes meet at the cone apex';
     root.rotation.x=Math.PI; // ring underneath with its teeth facing up, as on a lapping machine
   }else if(S.type==='worm'){
     const st=c.z1,z2=c.z2,rw=5,r2=z2/2,a=rw+r2,lead=st*Math.PI,k=TAU/lead,L=Math.max(7*Math.PI,1.1*r2);
@@ -796,9 +821,10 @@ function build3D(){
     root.add(P.sun,P.ring,P.car,sen);root.rotation.z=Math.PI;
   }
 }
-function fit3D(){
+function fit3D(view){
   const box=new THREE.Box3().setFromObject(R3.root),sph=box.getBoundingSphere(new THREE.Sphere());
-  const dir={spur:[0.35,0.45,1],helical:[0.55,0.5,0.9],bevel:[1,0.8,1.1],hypoid:[1,0.8,1.1],worm:[0.9,0.5,1],planetary:[0.25,0.4,1]}[S.type];
+  let dir={spur:[0.35,0.45,1],helical:[0.55,0.5,0.9],straight:[1,0.8,1.1],bevel:[1,0.8,1.1],hypoid:[1,0.8,1.1],worm:[0.9,0.5,1],planetary:[0.25,0.4,1]}[S.type];
+  if(view==='top')dir=[0,1,0.001];else if(view==='front')dir=[0.001,0,1];else if(view==='side')dir=[1,0,0.001];
   const v=new THREE.Vector3(dir[0],dir[1],dir[2]).normalize(),cam=R3.camera,asp=Math.min(1,cam.aspect);
   const dist=sph.radius/Math.sin(cam.fov*Math.PI/360)/asp*0.78;
   R3.controls.target.copy(sph.center);cam.position.copy(sph.center).addScaledVector(v,dist);cam.near=dist/100;cam.far=dist*10;cam.updateProjectionMatrix();R3.controls.update();
@@ -829,12 +855,13 @@ function render3D(){
   update3D();R3.controls.update();R3.renderer.render(R3.scene,R3.camera);
 }
 function setDim(d){
-  mode3d=d==='3d'&&has3D;$('gears').hidden=mode3d;$('g3').hidden=!mode3d;$('resetView').hidden=!mode3d;
+  mode3d=d==='3d'&&has3D;$('gears').hidden=mode3d;$('g3').hidden=!mode3d;$('resetView').hidden=!mode3d;$('views3d').hidden=!mode3d;
   if(mode3d){if(!R3)init3D();size3D();R3.sig='';R3.fit=''}
   $(mode3d?'d3':'d2').checked=true;note3d();
 }
 document.querySelectorAll('input[name=dim]').forEach(r=>r.addEventListener('change',()=>setDim(r.value)));
 $('resetView').addEventListener('click',()=>{if(R3)fit3D()});
+document.querySelectorAll('[data-view]').forEach(b=>b.addEventListener('click',()=>{if(R3)fit3D(b.dataset.view==='iso'?undefined:b.dataset.view)}));
 if(!has3D){$('d3').disabled=true;$('d3').nextElementSibling.title='3D needs WebGL, which this browser has turned off'}
 
 // deep links such as #3d, #bevel or #hypoid-3d
