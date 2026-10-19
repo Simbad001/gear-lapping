@@ -34,6 +34,7 @@
   --accent:#e0a63a; --on-accent:#1a1206; --other:#64737f; --good:#5cc489; --warn:#e08a6b;
   --steel:#5e6e7b; --steel-hi:#8796a3; --steel-edge:#a3b0bb; --grid:#222c36; color-scheme:dark}
 *{box-sizing:border-box}
+[hidden]{display:none!important}
 body{margin:0;background:var(--bg);color:var(--ink);font:15px/1.55 var(--body)}
 .wrap{max-width:1180px;margin:0 auto;padding-block:28px 48px;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
 .eyebrow{font:600 13px/1.2 var(--display);letter-spacing:.12em;text-transform:uppercase;color:var(--accent);margin:0}
@@ -201,6 +202,7 @@ const other=f=>f==='unlapped'?'lapped':'unlapped';
 const cap=s=>s[0].toUpperCase()+s.slice(1);
 const gcd=(a,b)=>{while(b){[a,b]=[b,a%b]}return a};
 const fmtHz=v=>(v>=100?v.toFixed(0):v>=10?v.toFixed(1):v.toFixed(2))+' Hz';
+const fmtDb=v=>(v<0?'−':'')+Math.abs(v).toFixed(1)+' dB';
 const isPair=()=>S.type!=='planetary';
 
 function freqs(){const c=cfg();
@@ -305,7 +307,7 @@ function readouts(){
       ['Equal planet spacing',ok?'Possible':'Not possible',ok?'':'warn'],['Typical efficiency',T.eff]);
   }
   const lu=meshPeak(spec.unlapped),ll=meshPeak(spec.lapped),d=ll-lu;
-  rows.push(['Mesh tone, unlapped',lu.toFixed(1)+' dB'],['Mesh tone, lapped',ll.toFixed(1)+' dB'],['Change from lapping',(d>0?'+':d<0?'−':'')+Math.abs(d).toFixed(1)+' dB','hi']);
+  rows.push(['Mesh tone, unlapped',fmtDb(lu)],['Mesh tone, lapped',fmtDb(ll)],['Change from lapping',(d>0?'+':d<0?'−':'')+Math.abs(d).toFixed(1)+' dB','hi']);
   $('readouts').innerHTML=rows.map(r=>'<dt>'+r[0]+'</dt><dd'+(r[2]?' class="'+r[2]+'"':'')+'>'+r[1]+'</dd>').join('');
   $('lgAt').textContent=cap(S.finish)+' (shown)';$('lgBt').textContent=cap(other(S.finish));
   const unit=isPair()?(S.type==='worm'?'wheel':(S.type==='spur'||S.type==='helical'?'gear':'ring gear')):'carrier';
