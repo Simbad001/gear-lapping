@@ -5,50 +5,55 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta property="og:type" content="website">
 <meta property="og:title" content="Gear Mesh Simulator">
-<meta property="og:description" content="See and hear transmission error, gear-mesh harmonics and sidebands, unlapped vs lapped.">
+<meta property="og:description" content="Spur, helical, spiral bevel, hypoid, worm and planetary: see and hear transmission error, mesh harmonics and sidebands, unlapped vs lapped.">
 <meta property="og:url" content="https://simbad001.github.io/gear-lapping/simulator/">
 <meta property="og:image" content="https://simbad001.github.io/gear-lapping/cover.jpg">
 <meta name="twitter:card" content="summary_large_image">
 <title>Gear Mesh Simulator</title>
 <meta name="claude:viewport-fit-sides" content="cover">
-<meta name="description" content="Interactive gear mesh simulation: transmission error, gear-mesh frequency, sidebands, and what lapping changes.">
+<meta name="description" content="Interactive gear mesh simulation for spur, helical, spiral bevel, hypoid, worm and planetary gears: transmission error, mesh harmonics, sidebands, and what lapping changes.">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600&family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&display=swap">
 <style>
-/* Layout: instrument bench. Gear view + time trace left, controls and readouts right, spectrum full width below. */
+/* Layout: instrument bench. Gear-type chips on top; gear view + time trace left, controls and readouts right, spectrum full width below. */
 :root{
   --bg:#eef1f3; --panel:#ffffff; --panel-2:#f5f7f8; --ink:#1b232b; --muted:#5a6874; --line:#d3dae0;
-  --accent:#9c6510; --on-accent:#ffffff; --other:#8a97a2; --good:#2c7a4b;
-  --steel:#a9b5bf; --steel-edge:#56646f; --grid:#e3e8ec;
+  --accent:#9c6510; --on-accent:#ffffff; --other:#8a97a2; --good:#2c7a4b; --warn:#a4462a;
+  --steel:#a9b5bf; --steel-hi:#d3dbe1; --steel-edge:#56646f; --grid:#e3e8ec;
   --display:"Barlow Condensed","Arial Narrow",sans-serif;
   --body:"IBM Plex Sans",system-ui,-apple-system,"Segoe UI",sans-serif;
   --mono:"IBM Plex Mono",ui-monospace,"Cascadia Mono",Consolas,monospace;
 }
 @media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
   --bg:#11161b; --panel:#182029; --panel-2:#1f2832; --ink:#e5eaee; --muted:#93a1ad; --line:#2a3540;
-  --accent:#e0a63a; --on-accent:#1a1206; --other:#64737f; --good:#5cc489;
-  --steel:#5e6e7b; --steel-edge:#a3b0bb; --grid:#222c36; color-scheme:dark}}
+  --accent:#e0a63a; --on-accent:#1a1206; --other:#64737f; --good:#5cc489; --warn:#e08a6b;
+  --steel:#5e6e7b; --steel-hi:#8796a3; --steel-edge:#a3b0bb; --grid:#222c36; color-scheme:dark}}
 :root[data-theme="dark"]{
   --bg:#11161b; --panel:#182029; --panel-2:#1f2832; --ink:#e5eaee; --muted:#93a1ad; --line:#2a3540;
-  --accent:#e0a63a; --on-accent:#1a1206; --other:#64737f; --good:#5cc489;
-  --steel:#5e6e7b; --steel-edge:#a3b0bb; --grid:#222c36; color-scheme:dark}
+  --accent:#e0a63a; --on-accent:#1a1206; --other:#64737f; --good:#5cc489; --warn:#e08a6b;
+  --steel:#5e6e7b; --steel-hi:#8796a3; --steel-edge:#a3b0bb; --grid:#222c36; color-scheme:dark}
 *{box-sizing:border-box}
 body{margin:0;background:var(--bg);color:var(--ink);font:15px/1.55 var(--body)}
 .wrap{max-width:1180px;margin:0 auto;padding-block:28px 48px;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
 .eyebrow{font:600 13px/1.2 var(--display);letter-spacing:.12em;text-transform:uppercase;color:var(--accent);margin:0}
 .eyebrow a{color:inherit}
 h1{font:600 clamp(2.1rem,5vw,3.3rem)/1.02 var(--display);letter-spacing:.01em;margin:.3rem 0 .5rem;text-wrap:balance}
-.lead{max-width:64ch;color:var(--muted);margin:0}
-.grid{display:grid;grid-template-columns:minmax(0,1.55fr) minmax(0,1fr);gap:16px;margin-top:22px}
+.lead{max-width:66ch;color:var(--muted);margin:0}
+.types{display:flex;flex-wrap:wrap;gap:6px;margin-top:20px}
+.types input{position:absolute;opacity:0;pointer-events:none}
+.types label{padding:8px 14px;border:1px solid var(--line);border-radius:4px;background:var(--panel);font:600 15px/1 var(--display);letter-spacing:.06em;text-transform:uppercase;color:var(--muted);cursor:pointer}
+.types input:checked+label{background:var(--ink);border-color:var(--ink);color:var(--bg)}
+.types input:focus-visible+label{outline:2px solid var(--accent);outline-offset:2px}
+.grid{display:grid;grid-template-columns:minmax(0,1.55fr) minmax(0,1fr);gap:16px;margin-top:14px}
 @media (max-width:880px){.grid{grid-template-columns:minmax(0,1fr)}}
 .col{display:flex;flex-direction:column;gap:16px;min-width:0}
 .panel{background:var(--panel);border:1px solid var(--line);border-radius:6px;padding:14px;min-width:0}
 .ph{display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;margin:0 0 10px}
 .ph h2{font:600 15px/1.1 var(--display);letter-spacing:.11em;text-transform:uppercase;color:var(--muted);margin:0}
 canvas{display:block;width:100%}
-#gears{height:300px}#wave{height:140px}#spec{height:330px}
-@media (max-width:600px){#gears{height:230px}#spec{height:250px}}
+#gears{height:330px}#wave{height:140px}#spec{height:330px}
+@media (max-width:600px){#gears{height:260px}#spec{height:250px}}
 .seg{display:inline-flex;border:1px solid var(--line);border-radius:4px;overflow:hidden;position:relative}
 .seg input{position:absolute;opacity:0;pointer-events:none}
 .seg label{padding:8px 14px;font:600 14px/1 var(--display);letter-spacing:.07em;text-transform:uppercase;cursor:pointer;color:var(--muted);background:var(--panel-2)}
@@ -65,7 +70,7 @@ canvas{display:block;width:100%}
 dl.read{display:grid;grid-template-columns:auto 1fr;gap:7px 14px;margin:0}
 dl.read dt{color:var(--muted);font-size:13.5px}
 dl.read dd{margin:0;font:500 13.5px var(--mono);text-align:right;font-variant-numeric:tabular-nums}
-dl.read .hi{color:var(--good)}
+dl.read .hi{color:var(--good)} dl.read .warn{color:var(--warn)}
 .btns{display:flex;gap:8px;flex-wrap:wrap}
 button.btn{font:600 14px/1 var(--display);letter-spacing:.08em;text-transform:uppercase;padding:9px 14px;border-radius:4px;border:1px solid var(--line);background:var(--panel-2);color:var(--ink);cursor:pointer}
 button.btn.primary{background:var(--accent);border-color:var(--accent);color:var(--on-accent)}
@@ -74,6 +79,8 @@ button:focus-visible{outline:2px solid var(--ink);outline-offset:2px}
 .legend{display:flex;gap:14px;font:500 12.5px var(--mono);color:var(--muted);flex-wrap:wrap;align-items:center}
 .sw{display:inline-block;width:16px;height:3px;vertical-align:middle;margin-right:6px;border-radius:2px}
 .note{font-size:13px;color:var(--muted);margin:8px 0 0}
+.typenote{font-size:14px;margin:10px 0 0;max-width:75ch}
+.typenote b{font-weight:600}
 .explain{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:16px;margin-top:16px}
 @media (max-width:780px){.explain{grid-template-columns:minmax(0,1fr)}}
 .explain h3{font:600 18px/1.2 var(--display);letter-spacing:.02em;margin:0 0 6px}
@@ -86,27 +93,35 @@ button:focus-visible{outline:2px solid var(--ink);outline-offset:2px}
   <header>
     <p class="eyebrow">Companion to <a href="https://simbad001.github.io/gear-lapping/">Gear Lapping: More Than Noise</a></p>
     <h1>Gear Mesh Simulator</h1>
-    <p class="lead">Every tooth engagement pushes the gear pair a little off its ideal motion. That transmission error repeats at the gear-mesh frequency and becomes the whine you hear. Change the tooth counts, speed and tooth errors, then switch between unlapped and lapped to see, and hear, what lapping changes.</p>
+    <p class="lead">Every tooth engagement pushes a gear set a little off its ideal motion. That transmission error repeats at the gear-mesh frequency and becomes the whine you hear. Pick a gear type, change tooth counts, speed and tooth errors, then switch between unlapped and lapped to see, and hear, what changes.</p>
   </header>
+
+  <div class="types" role="radiogroup" aria-label="Gear type">
+    <input type="radio" name="type" id="tSpur" value="spur" checked><label for="tSpur">Spur</label>
+    <input type="radio" name="type" id="tHel" value="helical"><label for="tHel">Helical</label>
+    <input type="radio" name="type" id="tBev" value="bevel"><label for="tBev">Spiral bevel</label>
+    <input type="radio" name="type" id="tHyp" value="hypoid"><label for="tHyp">Hypoid</label>
+    <input type="radio" name="type" id="tWorm" value="worm"><label for="tWorm">Worm</label>
+    <input type="radio" name="type" id="tPlan" value="planetary"><label for="tPlan">Planetary</label>
+  </div>
 
   <div class="grid">
     <div class="col">
-      <section class="panel" aria-label="Gear pair animation">
+      <section class="panel" aria-label="Gear animation">
         <div class="ph">
-          <h2>Gear pair in mesh</h2>
-          <div class="btns">
-            <button class="btn" id="play" type="button">Pause</button>
-          </div>
+          <h2 id="gearTitle">Gear pair in mesh</h2>
+          <div class="btns"><button class="btn" id="play" type="button">Pause</button></div>
         </div>
-        <canvas id="gears" role="img" aria-label="Animated pinion and ring gear in mesh. The mesh point flashes at every tooth engagement."></canvas>
-        <p class="note">Shown slowed down, with the error motion exaggerated so you can see it. Gold dots mark tooth 1 on each gear; with a hunting-tooth ratio they meet again only after many turns.</p>
+        <canvas id="gears" role="img" aria-label="Animated gear set. The mesh flashes at every tooth engagement."></canvas>
+        <p class="typenote" id="typeNote"></p>
+        <p class="note">Shown slowed down, with the error motion exaggerated so you can see it. Gold dots and lines mark tooth 1.</p>
       </section>
       <section class="panel" aria-label="Transmission error over time">
         <div class="ph">
           <h2>Transmission error</h2>
           <div class="legend"><span><span class="sw" id="lgA"></span><span id="lgAt">Unlapped</span></span><span><span class="sw" id="lgB"></span><span id="lgBt">Lapped</span></span></div>
         </div>
-        <canvas id="wave" role="img" aria-label="Transmission error over one ring gear revolution, current finish against the other finish."></canvas>
+        <canvas id="wave" role="img" aria-label="Transmission error over one output revolution, current finish against the other finish."></canvas>
         <p class="note" id="waveNote"></p>
       </section>
     </div>
@@ -119,29 +134,22 @@ button:focus-visible{outline:2px solid var(--ink);outline-offset:2px}
             <input type="radio" name="finish" id="fLa" value="lapped"><label for="fLa">Lapped</label>
           </div>
         </div>
-        <div class="ctl"><label for="z1">Pinion teeth</label><output id="z1o" for="z1"></output><input type="range" id="z1" min="8" max="40" step="1" value="12"></div>
-        <div class="ctl"><label for="z2">Ring gear teeth</label><output id="z2o" for="z2"></output><input type="range" id="z2" min="20" max="80" step="1" value="37"></div>
-        <div class="ctl"><label for="rpm">Pinion speed</label><output id="rpmo" for="rpm"></output><input type="range" id="rpm" min="300" max="6000" step="50" value="3000"></div>
+        <div class="ctl"><label for="z1" id="z1l">Pinion teeth</label><output id="z1o" for="z1"></output><input type="range" id="z1" min="8" max="40" step="1" value="12"></div>
+        <div class="ctl"><label for="z2" id="z2l">Gear teeth</label><output id="z2o" for="z2"></output><input type="range" id="z2" min="20" max="80" step="1" value="37"></div>
+        <div class="ctl" id="npRow" hidden><label for="np">Planets</label><output id="npo" for="np"></output><input type="range" id="np" min="3" max="5" step="1" value="3"></div>
+        <div class="ctl" id="betaRow" hidden><label for="beta" id="betal">Helix angle</label><output id="betao" for="beta"></output><input type="range" id="beta" min="0" max="45" step="1" value="20"></div>
+        <div class="ctl"><label for="rpm" id="rpml">Pinion speed</label><output id="rpmo" for="rpm"></output><input type="range" id="rpm" min="300" max="6000" step="50" value="3000"></div>
         <p class="sub"><span>Tooth errors · <b id="errState">Unlapped</b></span><button class="link" id="reset" type="button">Reset errors</button></p>
         <div class="ctl"><label for="te">Mesh error amplitude</label><output id="teo" for="te"></output><input type="range" id="te" min="0" max="15" step="0.5" value="8"></div>
         <div class="ctl"><label for="sc">Tooth-to-tooth spacing error</label><output id="sco" for="sc"></output><input type="range" id="sc" min="0" max="10" step="0.1" value="5"></div>
         <div class="ctl"><label for="ro">Runout</label><output id="roo" for="ro"></output><input type="range" id="ro" min="0" max="30" step="1" value="15"></div>
         <div class="btns"><button class="btn primary" id="listen" type="button">Listen</button></div>
-        <p class="note" style="margin:0">Plays the simulated mesh at its real frequencies. Switch the finish while it plays to hear the change.</p>
+        <p class="note" style="margin:0">Plays the simulated mesh at its real frequencies. Switch the finish or the gear type while it plays to hear the change.</p>
       </section>
 
       <section class="panel" aria-label="Readouts">
         <div class="ph"><h2>Frequencies</h2></div>
-        <dl class="read">
-          <dt>Pinion shaft, f₁</dt><dd id="rF1"></dd>
-          <dt>Ring gear shaft, f₂</dt><dd id="rF2"></dd>
-          <dt>Gear-mesh frequency</dt><dd id="rGmf"></dd>
-          <dt>Ratio</dt><dd id="rRatio"></dd>
-          <dt>Hunting-tooth frequency</dt><dd id="rHt"></dd>
-          <dt>1×GMF level, unlapped</dt><dd id="rLu"></dd>
-          <dt>1×GMF level, lapped</dt><dd id="rLl"></dd>
-          <dt>Change from lapping</dt><dd id="rD" class="hi"></dd>
-        </dl>
+        <dl class="read" id="readouts"></dl>
       </section>
     </div>
   </div>
@@ -159,71 +167,117 @@ button:focus-visible{outline:2px solid var(--ink);outline-offset:2px}
   </section>
 
   <div class="explain">
-    <div class="panel"><h3>Mesh frequency</h3><p>Teeth engage at pinion teeth × shaft speed. Errors that repeat on every tooth show up as tall lines at 1×, 2× and 3× this frequency. These lines are the whine, and lapping lowers them most.</p></div>
-    <div class="panel"><h3>Sidebands</h3><p>Runout and eccentricity make the mesh force rise and fall once per revolution. That modulation puts sidebands on each side of the mesh lines, spaced at the shaft frequency. Condition monitoring watches them grow as gears wear.</p></div>
-    <div class="panel"><h3>Tooth-to-tooth errors</h3><p>Uneven tooth spacing differs from tooth to tooth, so it repeats once per revolution. It spreads energy over many shaft orders and raises the floor between the mesh lines. Lapped pairs show a lower, cleaner floor.</p></div>
+    <div class="panel"><h3>Mesh frequency</h3><p>Teeth engage at teeth × shaft speed. Errors that repeat on every tooth show up as tall lines at 1×, 2× and 3× this frequency. These lines are the whine, and lapping lowers them most.</p></div>
+    <div class="panel"><h3>Contact overlap</h3><p>Helical, spiral bevel, hypoid and worm teeth overlap across the face, so several teeth share the load and each engagement is softer. The mesh lines drop as the overlap ratio rises, and drop furthest near whole-number values.</p></div>
+    <div class="panel"><h3>Sidebands</h3><p>Runout makes the mesh force rise and fall once per revolution, which puts sidebands around the mesh lines at the shaft frequencies. In a planetary set, each planet passing the sensor does the same at the carrier frequency.</p></div>
   </div>
 
-  <p class="foot">Simplified model, drawn as a spur pair. Spiral bevel and hypoid sets mesh at the same tooth frequency. Transmission error is the sum of the mesh harmonics, a fixed pattern of tooth spacing errors on each gear, and runout that modulates the mesh once per revolution. The spectrum is a 65,536-point FFT with a Hann window, in dB re 1 µm. The error values are illustrative, not measurements. Read the article: <a href="https://simbad001.github.io/gear-lapping/">Gear Lapping: More Than Noise</a>.</p>
+  <p class="foot">Simplified model for teaching, not design. Transmission error is the sum of the mesh harmonics, scaled by the face overlap of each gear type; a fixed pattern of tooth spacing errors on each gear; runout that modulates the mesh once per revolution; and a sliding-friction floor that is highest for hypoid and worm sets. The planetary model sums each planet's mesh, weighted by its distance from a sensor on the fixed ring. The spectrum is a 65,536-point FFT with a Hann window, in dB re 1 µm. Error values and efficiency ranges are illustrative, not measurements. Read the article: <a href="https://simbad001.github.io/gear-lapping/">Gear Lapping: More Than Noise</a>.</p>
 </div>
 
 <script>
 (function(){
 const $=id=>document.getElementById(id);
+const TAU=2*Math.PI;
 const PRESETS={unlapped:{te:8,sc:5,ro:15},lapped:{te:3,sc:1.2,ro:9}};
-const S={finish:'unlapped',z1:12,z2:37,rpm:3000,view:'full',
-  errs:{unlapped:{...PRESETS.unlapped},lapped:{...PRESETS.lapped}}};
+const TYPES={
+  spur:{label:'Spur',title:'Spur gear pair',z1:{min:8,max:40,v:12,l:'Pinion teeth'},z2:{min:20,max:80,v:37,l:'Gear teeth'},rpm:{min:300,max:6000,v:3000,l:'Pinion speed'},slide:1,anim:0.12,eff:'97–99 %',
+    note:'<b>Spur.</b> Straight teeth meet across the whole face at once, and one or two teeth carry the load. Each engagement is a sharp step, so spur gears are the loudest type. Left: end view. Right: side view.'},
+  helical:{label:'Helical',title:'Helical gear pair',z1:{min:8,max:40,v:12,l:'Pinion teeth'},z2:{min:20,max:80,v:37,l:'Gear teeth'},rpm:{min:300,max:6000,v:3000,l:'Pinion speed'},beta:{min:0,max:40,v:20,l:'Helix angle'},face:10,slide:1,anim:0.12,eff:'97–99 %',
+    note:'<b>Helical.</b> Slanted teeth come into contact gradually, so the contact line sweeps across the face. With an overlap ratio above 1, several teeth share the load and the mesh tone drops. The helix also creates axial thrust.'},
+  bevel:{label:'Spiral bevel',title:'Spiral bevel set',z1:{min:8,max:40,v:12,l:'Pinion teeth'},z2:{min:20,max:80,v:37,l:'Ring gear teeth'},rpm:{min:300,max:6000,v:3000,l:'Pinion speed'},beta:{min:0,max:45,v:35,l:'Spiral angle'},face:8,slide:1.2,anim:0.12,eff:'96–99 %',
+    note:'<b>Spiral bevel.</b> Shafts at 90° with axes that meet. Curved teeth overlap like helical teeth. Hardened sets are usually lapped as matched pairs, as in the article photo. Ring gear seen face-on, pinion lying across it.'},
+  hypoid:{label:'Hypoid',title:'Hypoid set',z1:{min:8,max:40,v:12,l:'Pinion teeth'},z2:{min:20,max:80,v:37,l:'Ring gear teeth'},rpm:{min:300,max:6000,v:3000,l:'Pinion speed'},beta:{min:25,max:50,v:45,l:'Pinion spiral angle'},face:8,slide:3,anim:0.12,eff:'90–96 %',
+    note:'<b>Hypoid.</b> Like spiral bevel, but the pinion axis is offset from the ring centre. The offset adds sliding along the teeth: more friction, more heat and a higher noise floor. Hypoid sets gain the most from lapping.'},
+  worm:{label:'Worm',title:'Worm and wheel',z1:{min:1,max:4,v:1,l:'Worm starts'},z2:{min:20,max:80,v:40,l:'Wheel teeth'},rpm:{min:300,max:3000,v:1500,l:'Worm speed'},slide:4,anim:0.5,eps:2.4,
+    note:'<b>Worm.</b> A screw drives the wheel and contact is almost all sliding. It runs quietly but loses more energy. Mesh frequency is worm starts × worm speed, so it sits far lower than in other types. Worm sets are usually run in rather than lapped; read “lapped” here as a smoother, run-in set.'},
+  planetary:{label:'Planetary',title:'Planetary stage',z1:{min:12,max:40,v:21,l:'Sun teeth'},z2:{min:12,max:40,v:24,l:'Planet teeth'},rpm:{min:300,max:6000,v:3000,l:'Sun speed'},np:{min:3,max:5,v:3},slide:1,anim:0.15,eff:'97–99 % per stage',
+    note:'<b>Planetary.</b> Sun drives, ring is fixed, carrier is the output. Each planet’s mesh is loudest as it passes the sensor on the ring, so the spectrum shows sidebands at the carrier frequency, often uneven on either side of the mesh line.'}
+};
+const S={type:'spur',finish:'unlapped',view:'full',cfgs:{},errs:{unlapped:{...PRESETS.unlapped},lapped:{...PRESETS.lapped}}};
+for(const k in TYPES){const T=TYPES[k];S.cfgs[k]={z1:T.z1.v,z2:T.z2.v,rpm:T.rpm.v,beta:T.beta?T.beta.v:0,np:T.np?T.np.v:3}}
+const cfg=()=>S.cfgs[S.type],TY=()=>TYPES[S.type];
 const other=f=>f==='unlapped'?'lapped':'unlapped';
 const cap=s=>s[0].toUpperCase()+s.slice(1);
 const gcd=(a,b)=>{while(b){[a,b]=[b,a%b]}return a};
 const fmtHz=v=>(v>=100?v.toFixed(0):v>=10?v.toFixed(1):v.toFixed(2))+' Hz';
+const isPair=()=>S.type!=='planetary';
+
+function freqs(){const c=cfg();
+  if(S.type==='planetary'){const zs=c.z1,zp=c.z2,zr=zs+2*zp,fs=c.rpm/60,fc=fs*zs/(zs+zr);
+    return {fd:fs,fs,fc,zs,zp,zr,np:c.np,fm:fc*zr,fpl:(fs-fc)*zs/zp,fA:fc,fB:fs-fc}}
+  const f1=c.rpm/60,fm=f1*c.z1;return {fd:f1,f1,f2:fm/c.z2,fm,fA:f1,fB:fm/c.z2}}
+function epsOf(){const T=TY(),c=cfg();if(T.eps)return T.eps;if(T.face)return T.face*Math.tan(c.beta*Math.PI/180)/Math.PI;return 0}
 
 // ---------- model ----------
 function rng(seed){let a=seed>>>0;return function(){a=a+0x6D2B79F5|0;let t=Math.imul(a^a>>>15,1|a);t=t+Math.imul(t^t>>>7,61|t)^t;return((t^t>>>14)>>>0)/4294967296}}
-function gauss(r){let u=0;while(u===0)u=r();return Math.sqrt(-2*Math.log(u))*Math.cos(2*Math.PI*r())}
+function gauss(r){let u=0;while(u===0)u=r();return Math.sqrt(-2*Math.log(u))*Math.cos(TAU*r())}
 function pattern(z,seed){const r=rng(seed*7919+z*104729);const a=new Float64Array(z);let m=0;for(let i=0;i<z;i++){a[i]=gauss(r);m+=a[i]}m/=z;for(let i=0;i<z;i++)a[i]-=m;return a}
-function model(e){
-  const z1=S.z1,z2=S.z2,f1=S.rpm/60,f2=f1*z1/z2,fm=f1*z1;
+const smooth=fr=>{if(fr<=0.75)return 0;const u=(fr-0.75)/0.25;return u*u*(3-2*u)};
+function model(e){return isPair()?modelPair(e):modelPlanet(e)}
+function modelPair(e){
+  const c=cfg(),F=freqs(),z1=c.z1,z2=c.z2,f1=F.f1,f2=F.f2,fm=F.fm,eps=epsOf();
+  const att=n=>eps>0?Math.max(0.1,Math.abs(Math.sin(Math.PI*n*eps)/(Math.PI*n*eps))):1;
+  const A1=att(1),A2=0.35*att(2),A3=0.15*att(3),sp=1/(1+0.5*eps);
   const p1=pattern(z1,1),p2=pattern(z2,2);
-  const T=e.te,SC=e.sc,R=e.ro,m1=Math.min(0.6,R/50),m2=0.6*m1,TAU=2*Math.PI;
-  return function(t){
+  const T=e.te,SC=e.sc*sp,R=e.ro,m1=Math.min(0.6,R/50),m2=0.6*m1;
+  const f=function(t){
     const p=fm*t,k=Math.floor(p),fr=p-k;
-    const i0=((k%z1)+z1)%z1,j0=((k%z2)+z2)%z2,i1=(i0+1)%z1,j1=(j0+1)%z2;
-    let s=0;if(fr>0.75){const u=(fr-0.75)/0.25;s=u*u*(3-2*u)}
+    const i0=((k%z1)+z1)%z1,j0=((k%z2)+z2)%z2,i1=(i0+1)%z1,j1=(j0+1)%z2,s=smooth(fr);
     const ep=SC*((1-s)*(p1[i0]+p2[j0])+s*(p1[i1]+p2[j1]));
-    const ph=TAU*p;
-    const mesh=T*(Math.cos(ph)+0.35*Math.cos(2*ph+0.7)+0.15*Math.cos(3*ph+1.9));
-    const a1=TAU*f1*t,a2=TAU*f2*t+0.4;
-    const mod=1+m1*Math.sin(a1)+m2*Math.sin(a2);
+    const ph=TAU*p,mesh=T*(A1*Math.cos(ph)+A2*Math.cos(2*ph+0.7)+A3*Math.cos(3*ph+1.9));
+    const a1=TAU*f1*t,a2=TAU*f2*t+0.4,mod=1+m1*Math.sin(a1)+m2*Math.sin(a2);
     return (mesh+ep)*mod+R*(0.5*Math.sin(a1)+0.3*Math.sin(a2+0.6));
   };
+  f.noise=0.03+0.012*TY().slide*e.te;return f;
+}
+function modelPlanet(e){
+  const F=freqs(),{zs,zp,zr,np,fm,fc,fs}=F;
+  const ring=pattern(zr,3),sun=pattern(zs,4),pl=[];for(let i=0;i<np;i++)pl.push(pattern(zp,10+i));
+  const T=e.te,SC=e.sc,R=e.ro,m1=Math.min(0.6,R/50),m2=0.5*m1,sen=-Math.PI/2;
+  const f=function(t){
+    let sum=0;
+    for(let i=0;i<np;i++){
+      const al=TAU*fc*t+TAU*i/np,d=al-sen,w=Math.pow(0.5+0.5*Math.cos(d),2)+0.15;
+      const P=fm*t+zr*i/np,k=Math.floor(P),fr=P-k,s=smooth(fr);
+      const Ps=fm*t+zs*i/np,ks=Math.floor(Ps);
+      const r0=((k%zr)+zr)%zr,r1=(r0+1)%zr,q0=((k%zp)+zp)%zp,q1=(q0+1)%zp,s0=((ks%zs)+zs)%zs,s1=(s0+1)%zs;
+      const ep=SC*((1-s)*(ring[r0]+pl[i][q0]+sun[s0])+s*(ring[r1]+pl[i][q1]+sun[s1]));
+      const ph=TAU*P,mesh=T*(Math.cos(ph)+0.35*Math.cos(2*ph+0.7)+0.15*Math.cos(3*ph+1.9));
+      const mod=1+m1*Math.sin(TAU*(fs-fc)*t+TAU*i/np)+m2*Math.sin(TAU*fc*t);
+      sum+=w*(mesh+ep)*mod;
+    }
+    return sum+R*0.3*Math.sin(TAU*fs*t);
+  };
+  f.noise=0.03+0.012*e.te;return f;
 }
 function fft(re,im){
   const n=re.length;
   for(let i=1,j=0;i<n;i++){let b=n>>1;for(;j&b;b>>=1)j^=b;j^=b;if(i<j){let t=re[i];re[i]=re[j];re[j]=t;t=im[i];im[i]=im[j];im[j]=t}}
-  for(let len=2;len<=n;len<<=1){const ang=-2*Math.PI/len,wr=Math.cos(ang),wi=Math.sin(ang),h=len>>1;
+  for(let len=2;len<=n;len<<=1){const ang=-TAU/len,wr=Math.cos(ang),wi=Math.sin(ang),h=len>>1;
     for(let i=0;i<n;i+=len){let cr=1,ci=0;for(let k=0;k<h;k++){const a=i+k,b=a+h;
       const xr=re[b]*cr-im[b]*ci,xi=re[b]*ci+im[b]*cr;re[b]=re[a]-xr;im[b]=im[a]-xi;re[a]+=xr;im[a]+=xi;
       const t=cr*wr-ci*wi;ci=cr*wi+ci*wr;cr=t}}}
 }
 const N=65536;
 function spectrum(e){
-  const fm=S.rpm/60*S.z1,fs=Math.max(4096,Math.pow(2,Math.ceil(Math.log2(fm*8))));
-  const f=model(e),re=new Float64Array(N),im=new Float64Array(N),nr=rng(99);
-  for(let n=0;n<N;n++){const w=0.5-0.5*Math.cos(2*Math.PI*n/(N-1));re[n]=(f(n/fs)+0.03*gauss(nr))*w}
+  const fm=freqs().fm,fs=Math.max(4096,Math.pow(2,Math.ceil(Math.log2(fm*8))));
+  const f=model(e),re=new Float64Array(N),im=new Float64Array(N),nr=rng(99),na=f.noise;
+  for(let n=0;n<N;n++){const w=0.5-0.5*Math.cos(TAU*n/(N-1));re[n]=(f(n/fs)+na*gauss(nr))*w}
   fft(re,im);
   const db=new Float32Array(N/2);
   for(let k=0;k<N/2;k++){const a=4*Math.hypot(re[k],im[k])/N;db[k]=20*Math.log10(Math.max(a,1e-5))}
   return {fs,df:fs/N,db};
 }
-function peakAt(sp,f){const k=Math.round(f/sp.df);let m=-200;for(let i=k-3;i<=k+3;i++)if(i>0&&i<sp.db.length)m=Math.max(m,sp.db[i]);return m}
+function meshPeak(sp){const F=freqs();const half=isPair()?3*sp.df:F.np*F.fc*1.05;
+  const k0=Math.max(1,Math.floor((F.fm-half)/sp.df)),k1=Math.min(sp.db.length-1,Math.ceil((F.fm+half)/sp.df));let m=-200;for(let k=k0;k<=k1;k++)m=Math.max(m,sp.db[k]);return m}
 
-// ---------- state & caching ----------
+// ---------- state ----------
 let spec={},wave={},samplers={},dirty=true;
 function recompute(){
-  const fm=S.rpm/60*S.z1;
+  const F=freqs();
   for(const k of ['unlapped','lapped']){spec[k]=spectrum(S.errs[k]);samplers[k]=model(S.errs[k])}
-  const cycles=Math.min(S.z2,60),Tw=cycles/fm,P=cycles*40;
+  const cycles=isPair()?Math.min(cfg().z2,60):Math.min(F.zr,90),Tw=cycles/F.fm,P=cycles*40;
   for(const k of ['unlapped','lapped']){const a=new Float32Array(P);for(let i=0;i<P;i++)a[i]=samplers[k](i/P*Tw);wave[k]=a}
   wave.Tw=Tw;wave.cycles=cycles;
   readouts();drawSpec();drawWave();
@@ -232,41 +286,203 @@ function recompute(){
 function schedule(){if(!dirty){dirty=true;requestAnimationFrame(()=>{dirty=false;recompute()})}}
 
 function readouts(){
-  const f1=S.rpm/60,f2=f1*S.z1/S.z2,fm=f1*S.z1,g=gcd(S.z1,S.z2);
-  $('z1o').textContent=S.z1;$('z2o').textContent=S.z2;$('rpmo').textContent=S.rpm+' rpm';
-  const e=S.errs[S.finish];$('teo').textContent=e.te.toFixed(1)+' µm';$('sco').textContent=e.sc.toFixed(1)+' µm';$('roo').textContent=e.ro.toFixed(0)+' µm';
+  const T=TY(),c=cfg(),F=freqs(),e=S.errs[S.finish];
+  $('z1o').textContent=c.z1;$('z2o').textContent=c.z2;$('rpmo').textContent=c.rpm+' rpm';$('npo').textContent=c.np;$('betao').textContent=c.beta+'°';
+  $('teo').textContent=e.te.toFixed(1)+' µm';$('sco').textContent=e.sc.toFixed(1)+' µm';$('roo').textContent=e.ro.toFixed(0)+' µm';
   $('errState').textContent=cap(S.finish);
-  $('rF1').textContent=fmtHz(f1);$('rF2').textContent=fmtHz(f2);$('rGmf').textContent=fmtHz(fm);
-  $('rRatio').textContent=(S.z2/S.z1).toFixed(3)+' : 1';
-  $('rHt').textContent=fmtHz(fm*g/(S.z1*S.z2))+(g===1?'':'  (common factor '+g+')');
-  const lu=peakAt(spec.unlapped,fm),ll=peakAt(spec.lapped,fm);
-  $('rLu').textContent=lu.toFixed(1)+' dB';$('rLl').textContent=ll.toFixed(1)+' dB';
-  const d=ll-lu;$('rD').textContent=(d>0?'+':d<0?'−':'')+Math.abs(d).toFixed(1)+' dB';
+  const rows=[];
+  if(isPair()){
+    const g=gcd(c.z1,c.z2),w=S.type==='worm';
+    rows.push([w?'Worm shaft, f₁':'Pinion shaft, f₁',fmtHz(F.f1)],[w?'Wheel shaft, f₂':(S.type==='spur'||S.type==='helical'?'Gear shaft, f₂':'Ring gear shaft, f₂'),fmtHz(F.f2)],
+      ['Gear-mesh frequency',fmtHz(F.fm)],['Ratio',(c.z2/c.z1).toFixed(3)+' : 1'],['Hunting-tooth frequency',fmtHz(F.fm*g/(c.z1*c.z2))]);
+    const eps=epsOf();if(eps>0)rows.push([w?'Contact overlap (assumed)':'Overlap ratio εβ',eps.toFixed(2)]);
+    if(w){const g2=Math.atan(c.z1/10),ph=Math.atan(0.05);rows.push(['Lead angle',(g2*180/Math.PI).toFixed(1)+'°'],['Efficiency, μ = 0.05','≈ '+Math.round(100*Math.tan(g2)/Math.tan(g2+ph))+' %'])}
+    else rows.push(['Typical efficiency',T.eff]);
+  }else{
+    const ok=(F.zs+F.zr)%F.np===0;
+    rows.push(['Ring gear teeth',F.zr],['Sun, fₛ',fmtHz(F.fs)],['Carrier, f꜀',fmtHz(F.fc)],['Planet spin (rel. carrier)',fmtHz(F.fpl)],
+      ['Gear-mesh frequency',fmtHz(F.fm)],['Planet-pass frequency',fmtHz(F.np*F.fc)],['Ratio',(1+F.zr/F.zs).toFixed(3)+' : 1'],
+      ['Equal planet spacing',ok?'Possible':'Not possible',ok?'':'warn'],['Typical efficiency',T.eff]);
+  }
+  const lu=meshPeak(spec.unlapped),ll=meshPeak(spec.lapped),d=ll-lu;
+  rows.push(['Mesh tone, unlapped',lu.toFixed(1)+' dB'],['Mesh tone, lapped',ll.toFixed(1)+' dB'],['Change from lapping',(d>0?'+':d<0?'−':'')+Math.abs(d).toFixed(1)+' dB','hi']);
+  $('readouts').innerHTML=rows.map(r=>'<dt>'+r[0]+'</dt><dd'+(r[2]?' class="'+r[2]+'"':'')+'>'+r[1]+'</dd>').join('');
   $('lgAt').textContent=cap(S.finish)+' (shown)';$('lgBt').textContent=cap(other(S.finish));
-  $('waveNote').textContent='One ring gear revolution'+(S.z2>60?' (first 60 mesh cycles)':'')+': '+wave.cycles+' mesh cycles in '+(wave.Tw*1000).toFixed(1)+' ms. Micrometres.';
+  const unit=isPair()?(S.type==='worm'?'wheel':(S.type==='spur'||S.type==='helical'?'gear':'ring gear')):'carrier';
+  const full=isPair()?cfg().z2:F.zr;
+  $('waveNote').textContent='One '+unit+' revolution'+(wave.cycles<full?' (first '+wave.cycles+' mesh cycles)':'')+': '+wave.cycles+' mesh cycles in '+(wave.Tw*1000).toFixed(1)+' ms. Micrometres.'+(isPair()?'':' The envelope rises as each planet passes the sensor.');
   $('specNote').textContent=S.view==='full'
-    ? 'Lines at 1×, 2× and 3× the gear-mesh frequency ('+fmtHz(fm)+'). dB re 1 µm.'
-    : 'Centred on 1×GMF. Sidebands every '+fmtHz(f1)+' (pinion) and '+fmtHz(f2)+' (ring gear) come from runout modulating the mesh.';
+    ? 'Lines at 1×, 2× and 3× the gear-mesh frequency ('+fmtHz(F.fm)+'). dB re 1 µm.'
+    : isPair()? 'Centred on 1×GMF. Markers every '+fmtHz(F.fA)+' ('+(S.type==='worm'?'worm':'pinion')+' shaft). Sidebands at '+fmtHz(F.fA)+' and '+fmtHz(F.fB)+' come from runout modulating the mesh.'
+    : 'Centred on 1×GMF. Markers every '+fmtHz(F.fc)+' (carrier). Planets passing the sensor spread the mesh tone into uneven sidebands; the tallest line is not always at the mesh frequency itself.';
 }
 
-// ---------- drawing ----------
+// ---------- drawing helpers ----------
 let C={};
 function tokens(){const cs=getComputedStyle(document.documentElement);const g=n=>cs.getPropertyValue(n).trim();
-  C={bg:g('--bg'),panel:g('--panel'),ink:g('--ink'),muted:g('--muted'),line:g('--line'),accent:g('--accent'),other:g('--other'),steel:g('--steel'),edge:g('--steel-edge'),grid:g('--grid')};
+  C={bg:g('--bg'),panel:g('--panel'),ink:g('--ink'),muted:g('--muted'),line:g('--line'),accent:g('--accent'),other:g('--other'),steel:g('--steel'),hi:g('--steel-hi'),edge:g('--steel-edge'),grid:g('--grid')};
   $('lgA').style.background=C.accent;$('lgB').style.background=C.other;}
 function fit(cv){const r=cv.getBoundingClientRect(),d=window.devicePixelRatio||1;const w=Math.max(1,Math.round(r.width*d)),h=Math.max(1,Math.round(r.height*d));
   if(cv.width!==w||cv.height!==h){cv.width=w;cv.height=h}const x=cv.getContext('2d');x.setTransform(d,0,0,d,0,0);return {x,w:r.width,h:r.height}}
 function nice(range,target){const raw=range/target,p=Math.pow(10,Math.floor(Math.log10(raw))),q=raw/p;return (q<1.5?1:q<3.5?2:q<7.5?5:10)*p}
 const MONO='500 11px "IBM Plex Mono", ui-monospace, monospace';
+function label(x,t,px,py,al,bl){x.font=MONO;x.fillStyle=C.muted;x.textAlign=al||'left';x.textBaseline=bl||'top';x.fillText(t,px,py)}
+function glow(x,px,py,rad,a){if(a<0.02)return;const g=x.createRadialGradient(px,py,0,px,py,rad);g.addColorStop(0,C.accent);g.addColorStop(1,'rgba(0,0,0,0)');x.globalAlpha=Math.min(1,a);x.fillStyle=g;x.beginPath();x.arc(px,py,rad,0,TAU);x.fill();x.globalAlpha=1}
+
+// external spur-profile gear, end view
+function gear(x,cx,cy,z,m,ang,lap,mark=true){
+  const r=m*z/2,ra=r+m,rf=r-1.25*m,tau=TAU/z;
+  x.beginPath();
+  for(let k=0;k<z;k++){const c=ang+k*tau,P=(rad,a)=>[cx+rad*Math.cos(a),cy+rad*Math.sin(a)];
+    const pts=[P(rf,c-0.33*tau),P(r,c-0.25*tau),P(ra,c-0.12*tau),P(ra,c+0.12*tau),P(r,c+0.25*tau),P(rf,c+0.33*tau)];
+    if(k===0)x.moveTo(...pts[0]);else x.lineTo(...pts[0]);for(let i=1;i<6;i++)x.lineTo(...pts[i]);
+    x.arc(cx,cy,rf,c+0.33*tau,c+0.67*tau)}
+  x.closePath();x.fillStyle=C.steel;x.fill();x.lineWidth=lap?1.6:1;x.strokeStyle=lap?C.accent:C.edge;x.stroke();
+  const hub=Math.max(rf*0.3,m*1.4);x.beginPath();x.arc(cx,cy,hub,0,TAU);x.fillStyle=C.panel;x.fill();x.lineWidth=1;x.strokeStyle=C.edge;x.stroke();
+  if(rf*0.62>hub+3){x.beginPath();x.arc(cx,cy,rf*0.62,0,TAU);x.globalAlpha=.35;x.stroke();x.globalAlpha=1}
+  if(mark){x.beginPath();x.arc(cx+r*0.8*Math.cos(ang),cy+r*0.8*Math.sin(ang),Math.max(2.2,m*0.35),0,TAU);x.fillStyle=C.accent;x.fill()}
+}
+// internal (ring) gear, end view
+function ringGear(x,cx,cy,z,m,ang,lap){
+  const r=m*z/2,rt=r-m,rr=r+1.25*m,rO=r+3*m,tau=TAU/z;
+  x.beginPath();x.arc(cx,cy,rO,0,TAU);x.closePath();
+  for(let k=0;k<z;k++){const c=ang+k*tau,P=(rad,a)=>[cx+rad*Math.cos(a),cy+rad*Math.sin(a)];
+    const pts=[P(rr,c-0.33*tau),P(r,c-0.25*tau),P(rt,c-0.12*tau),P(rt,c+0.12*tau),P(r,c+0.25*tau),P(rr,c+0.33*tau)];
+    if(k===0)x.moveTo(...pts[0]);else x.lineTo(...pts[0]);for(let i=1;i<6;i++)x.lineTo(...pts[i]);
+    x.arc(cx,cy,rr,c+0.33*tau,c+0.67*tau)}
+  x.closePath();x.fillStyle=C.steel;x.fill('evenodd');x.lineWidth=lap?1.6:1;x.strokeStyle=lap?C.accent:C.edge;x.stroke();
+}
+// cylinder seen from the side (axis horizontal) with tooth lines; sweep = helix twist across the face (rad)
+function cylinder(x,x0,x1,cy,r,ra,ang,z,sweep,lap){
+  const g=x.createLinearGradient(0,cy-ra,0,cy+ra);g.addColorStop(0,C.edge);g.addColorStop(0.35,C.hi);g.addColorStop(0.6,C.steel);g.addColorStop(1,C.edge);
+  x.fillStyle=g;x.fillRect(x0,cy-ra,x1-x0,2*ra);
+  const tau=TAU/z,n=18;
+  for(let k=0;k<z;k++){let open=false;x.beginPath();
+    for(let i=0;i<=n;i++){const s=i/n,ph=ang+k*tau+sweep*(s-0.5);const vis=Math.cos(ph)>0.05;
+      const px=x0+s*(x1-x0),py=cy+ra*Math.sin(ph);
+      if(vis){open?x.lineTo(px,py):x.moveTo(px,py);open=true}else open=false}
+    x.lineWidth=k===0?2:1.1;x.strokeStyle=k===0?C.accent:C.edge;x.globalAlpha=k===0?1:.75;x.stroke();x.globalAlpha=1}
+  x.lineWidth=lap?1.6:1;x.strokeStyle=lap?C.accent:C.edge;x.strokeRect(x0+.5,cy-ra+.5,x1-x0-1,2*ra-1);
+}
+
+// ---------- gear views ----------
+function viewPair(x,w,h,t,te,lap,F){
+  const c=cfg(),z1=c.z1,z2=c.z2,eps=epsOf();
+  const fw=w*0.47,m=Math.min((fw-12)/(z1+z2+2),(h-30)/(z2+2.5),(h-30)/(z1+z2+2.5));
+  const th1=TAU*TY().anim*tv,tau2=TAU/z2,jit=Math.max(-0.2*tau2,Math.min(0.2*tau2,-te*0.004));
+  const th2=Math.PI+tau2/2-th1*z1/z2+jit;
+  // end view
+  const span=m*(z1+z2)+2*m,cx1=(fw-span)/2+m*z1/2+m,cx2=cx1+m*(z1+z2)/2,cy=h/2+6;
+  gear(x,cx1,cy,z1,m,th1,lap);gear(x,cx2,cy,z2,m,th2,lap);
+  glow(x,cx1+m*z1/2,cy,m*1.8,flash*Math.min(1,0.35+Math.abs(te)/12));
+  label(x,'End view',8,6);
+  // side view: pinion on top, gear below, axes horizontal
+  const sx0=w*0.53,sx1=w-10,r1=m*z1/2,r2=m*z2/2,top=(h-(2*r1+2*r2+2*m))/2+6,cy1=top+m+r1,cy2=cy1+r1+r2;
+  const tb=Math.tan(c.beta*Math.PI/180),L=TY().face?TY().face*m:10*m;
+  const sw1=S.type==='helical'?L*tb/r1*1.6:0,sw2=S.type==='helical'?-L*tb/r2*1.6:0;
+  // side-view angles: rotation about the horizontal axis
+  cylinder(x,sx0,sx1,cy2,r2,r2+m,-th2+Math.PI/2,z2,sw2,lap);
+  cylinder(x,sx0,sx1,cy1,r1,r1+m,th1-Math.PI/2,z1,sw1,lap);
+  const yc=cy1+r1;
+  if(S.type==='spur'){x.globalAlpha=Math.min(1,flash*0.9);x.fillStyle=C.accent;x.fillRect(sx0,yc-2,sx1-sx0,4);x.globalAlpha=1}
+  else{const u=(F.fm*t)%1,len=(sx1-sx0)/Math.max(1,eps),pos=sx0+u*(sx1-sx0+len)-len/2;
+    const g=x.createLinearGradient(pos-len/2,0,pos+len/2,0);g.addColorStop(0,'rgba(0,0,0,0)');g.addColorStop(0.5,C.accent);g.addColorStop(1,'rgba(0,0,0,0)');
+    x.save();x.beginPath();x.rect(sx0,yc-4,sx1-sx0,8);x.clip();x.fillStyle=g;x.fillRect(pos-len/2,yc-3,len,6);x.restore()}
+  label(x,'Side view · contact '+(S.type==='spur'?'across full face':'sweeps across face'),sx0,6);
+  return 'TE '+(te>=0?'+':'−')+Math.abs(te).toFixed(2)+' µm';
+}
+function viewBevel(x,w,h,t,te,lap,F){
+  const c=cfg(),z1=c.z1,z2=c.z2,hyp=S.type==='hypoid',tb=Math.tan(c.beta*Math.PI/180);
+  const Ro=Math.min(h/2-14,(w-24)/2.5),Ri=0.64*Ro,cx=Math.max(1.5*Ro+12,w-Ro-14),cy=h/2+6,Rm=(Ri+Ro)/2;
+  const th1=TAU*TY().anim*tv,tau2=TAU/z2,jit=Math.max(-0.2*tau2,Math.min(0.2*tau2,-te*0.004)),th2=-th1*z1/z2+jit;
+  // ring gear body
+  x.beginPath();x.arc(cx,cy,Ro+2,0,TAU);x.fillStyle=C.edge;x.globalAlpha=.55;x.fill();x.globalAlpha=1;
+  const sweepR=(Ro-Ri)*tb/Rm,tw=0.5*tau2*Rm;
+  x.lineCap='butt';x.lineWidth=tw;
+  for(let k=0;k<z2;k++){x.beginPath();for(let i=0;i<=6;i++){const s=i/6,r=Ri+(Ro-Ri)*s,ph=th2+k*tau2+sweepR*(s-0.5);const px=cx+r*Math.cos(ph),py=cy+r*Math.sin(ph);i?x.lineTo(px,py):x.moveTo(px,py)}
+    x.strokeStyle=k===0?C.accent:C.steel;x.stroke()}
+  x.lineWidth=lap?1.6:1;x.strokeStyle=lap?C.accent:C.edge;
+  x.beginPath();x.arc(cx,cy,Ro,0,TAU);x.stroke();x.beginPath();x.arc(cx,cy,Ri,0,TAU);x.fillStyle=C.hi;x.fill();x.stroke();
+  x.beginPath();x.arc(cx,cy,Ri*0.32,0,TAU);x.fillStyle=C.panel;x.fill();x.lineWidth=1;x.strokeStyle=C.edge;x.stroke();
+  for(let b=0;b<8;b++){const a=th2+b*TAU/8;x.beginPath();x.arc(cx+Ri*0.62*Math.cos(a),cy+Ri*0.62*Math.sin(a),Math.max(2,Ri*0.06),0,TAU);x.fillStyle=C.panel;x.fill();x.stroke()}
+  // pinion lying across the ring teeth, axis horizontal
+  const off=hyp?0.42*Ri:0,ya=cy+off;
+  const xt=cx-Math.sqrt(Math.max(1,Ri*Ri-off*off)),xh=cx-Math.sqrt(Math.max(1,Ro*Ro-off*off));
+  const rt=Math.max(6,Ri*z1/z2*1.15),rh=Math.max(9,Ro*z1/z2*1.15),xs=xh-Ro*0.45,rsh=rh*0.45;
+  x.setLineDash([5,4]);x.strokeStyle=C.muted;x.lineWidth=1;x.beginPath();x.moveTo(xs-6,ya);x.lineTo(cx+(hyp?Ro*0.3:0),ya);x.stroke();x.setLineDash([]);
+  if(hyp){x.beginPath();x.moveTo(cx-4,cy);x.lineTo(cx+4,cy);x.moveTo(cx,cy-4);x.lineTo(cx,cy+4);x.stroke();
+    x.beginPath();x.moveTo(cx+Ro*0.18,cy);x.lineTo(cx+Ro*0.18,ya);x.stroke();label(x,'offset',cx+Ro*0.18+4,(cy+ya)/2,'left','middle')}
+  let g=x.createLinearGradient(0,ya-rsh,0,ya+rsh);g.addColorStop(0,C.edge);g.addColorStop(.4,C.hi);g.addColorStop(1,C.edge);x.fillStyle=g;x.fillRect(xs,ya-rsh,xh-xs,2*rsh);
+  g=x.createLinearGradient(0,ya-rh,0,ya+rh);g.addColorStop(0,C.edge);g.addColorStop(.38,C.hi);g.addColorStop(.62,C.steel);g.addColorStop(1,C.edge);
+  x.beginPath();x.moveTo(xh,ya-rh);x.lineTo(xt,ya-rt);x.lineTo(xt,ya+rt);x.lineTo(xh,ya+rh);x.closePath();x.fillStyle=g;x.fill();
+  const tau1=TAU/z1,sweepP=Math.min(1.4,(Ro-Ri)*tb/((rh+rt)/2)*0.5);
+  for(let k=0;k<z1;k++){let open=false;x.beginPath();
+    for(let i=0;i<=16;i++){const s=i/16,r=rh+(rt-rh)*s,ph=th1+k*tau1-sweepP*(s-0.5);
+      if(Math.cos(ph)>0.05){const px=xh+(xt-xh)*s,py=ya+r*Math.sin(ph);open?x.lineTo(px,py):x.moveTo(px,py);open=true}else open=false}
+    x.lineWidth=k===0?2:1.1;x.strokeStyle=k===0?C.accent:C.edge;x.stroke()}
+  x.lineWidth=lap?1.6:1;x.strokeStyle=lap?C.accent:C.edge;x.beginPath();x.moveTo(xh,ya-rh);x.lineTo(xt,ya-rt);x.lineTo(xt,ya+rt);x.lineTo(xh,ya+rh);x.closePath();x.stroke();
+  glow(x,(xh+xt)/2,ya-(rh+rt)/2*0.2,Math.max(10,(rh+rt)/2),flash*Math.min(1,0.35+Math.abs(te)/12));
+  label(x,'Ring gear face-on · pinion '+(hyp?'offset below centre':'axis through centre'),8,6);
+  return 'TE '+(te>=0?'+':'−')+Math.abs(te).toFixed(2)+' µm';
+}
+function viewWorm(x,w,h,t,te,lap,F){
+  const c=cfg(),st=c.z1,z2=c.z2,q=10;
+  const m=Math.min((h-30)/(z2+q+2),(w-24)/(z2*1.15+8)),rw=q*m/2,r2=m*z2/2,a=rw+r2;
+  const cx=w/2,yw=22+rw+m,y2=yw+a;
+  const thw=TAU*TY().anim*tv,tau2=TAU/z2,jit=Math.max(-0.2*tau2,Math.min(0.2*tau2,-te*0.004)),th2=-Math.PI/2+tau2/2+thw*st/z2+jit;
+  gear(x,cx,y2,z2,m,th2,lap);
+  const L=Math.min(w-30,Math.max(2.2*r2,7*Math.PI*m)),x0=cx-L/2,x1=cx+L/2,px=Math.PI*m,lead=st*px;
+  let g=x.createLinearGradient(0,yw-rw*0.4,0,yw+rw*0.4);g.addColorStop(0,C.edge);g.addColorStop(.4,C.hi);g.addColorStop(1,C.edge);x.fillStyle=g;x.fillRect(8,yw-rw*0.4,w-16,rw*0.8);
+  g=x.createLinearGradient(0,yw-rw-m,0,yw+rw+m);g.addColorStop(0,C.edge);g.addColorStop(.35,C.hi);g.addColorStop(.6,C.steel);g.addColorStop(1,C.edge);
+  x.fillStyle=g;x.fillRect(x0,yw-rw-m,L,2*(rw+m));
+  x.save();x.beginPath();x.rect(x0,yw-rw-m,L,2*(rw+m));x.clip();
+  const off=((thw/TAU)*lead)%px;x.lineWidth=Math.max(1.5,px*0.32);
+  for(let n=-Math.ceil(L/px)-st-2;n<=Math.ceil(L/px)+st+2;n++){const xn=x0+off+n*px;x.beginPath();
+    for(let i=0;i<=16;i++){const ph=-Math.PI/2+Math.PI*i/16,X=xn+lead*ph/TAU,Y=yw+(rw+m*0.5)*Math.sin(ph);i?x.lineTo(X,Y):x.moveTo(X,Y)}
+    x.strokeStyle=C.edge;x.globalAlpha=.8;x.stroke();x.globalAlpha=1}
+  x.restore();
+  x.lineWidth=lap?1.6:1;x.strokeStyle=lap?C.accent:C.edge;x.strokeRect(x0+.5,yw-rw-m+.5,L-1,2*(rw+m)-1);
+  glow(x,cx,yw+rw,m*2.2,flash*Math.min(1,0.35+Math.abs(te)/12));
+  label(x,'Worm ('+st+(st>1?' starts':' start')+') over wheel',8,6);
+  return 'TE '+(te>=0?'+':'−')+Math.abs(te).toFixed(2)+' µm';
+}
+let pFlash=[0,0,0,0,0],pLastK=[];
+function viewPlanet(x,w,h,t,te,lap,F){
+  const {zs,zp,zr,np}=F,m=Math.min(w-10,h-34)/(zr+6),cx=w/2,cy=h/2+12,rO=m*(zr/2+3);
+  const ths=TAU*TY().anim*tv,thc=ths*zs/(zs+zr),tp=TAU/zp,tr=TAU/zr,a=m*(zs+zp)/2;
+  const phi=i=>{const al=thc+TAU*i/np;return al+Math.PI-tp/2+(zs/zp)*(al-ths)};
+  const al0=thc,ph0=phi(0),v=(al0-ph0)/tp,dd=ph0+Math.round(v)*tp-al0,dr=al0+dd*zp/zr-0.5*tr;
+  ringGear(x,cx,cy,zr,m,dr,lap);
+  // sensor on the ring housing
+  x.fillStyle=C.ink;x.fillRect(cx-9,cy-rO-9,18,8);label(x,'Sensor',cx+14,cy-rO-5,'left','middle');
+  // carrier
+  if(np>=3){x.beginPath();for(let i=0;i<np;i++){const al=thc+TAU*i/np,X=cx+a*Math.cos(al),Y=cy+a*Math.sin(al);i?x.lineTo(X,Y):x.moveTo(X,Y)}x.closePath();
+    x.fillStyle=C.edge;x.globalAlpha=.18;x.fill();x.globalAlpha=1;x.strokeStyle=C.edge;x.lineWidth=1;x.stroke()}
+  for(let i=0;i<np;i++){const al=thc+TAU*i/np;gear(x,cx+a*Math.cos(al),cy+a*Math.sin(al),zp,m,phi(i),lap,i===0)}
+  gear(x,cx,cy,zs,m,ths,lap);
+  for(let i=0;i<np;i++){const al=thc+TAU*i/np,d=al+Math.PI/2,wgt=Math.pow(0.5+0.5*Math.cos(d),2);
+    const k=Math.floor(F.fm*t+zr*i/np);if(pLastK[i]!==undefined&&k!==pLastK[i])pFlash[i]=1;pLastK[i]=k;
+    glow(x,cx+m*zr/2*Math.cos(al),cy+m*zr/2*Math.sin(al),m*1.8,pFlash[i]*(0.25+0.75*wgt))}
+  label(x,'Ring fixed · sun in · carrier out',8,6);
+  return 'Sensor '+(te>=0?'+':'−')+Math.abs(te).toFixed(2)+' µm';
+}
+
+function drawGears(){
+  const {x,w,h}=fit($('gears'));x.clearRect(0,0,w,h);
+  const F=freqs(),t=realT(),te=samplers[S.finish]?samplers[S.finish](t):0,lap=S.finish==='lapped';
+  if(isPair()){const k=Math.floor(F.fm*t);if(lastK!==null&&k!==lastK)flash=1;lastK=k}
+  const fn={spur:viewPair,helical:viewPair,bevel:viewBevel,hypoid:viewBevel,worm:viewWorm,planetary:viewPlanet}[S.type];
+  const txt=fn(x,w,h,t,te,lap,F);
+  label(x,txt,8,h-6,'left','bottom');
+}
 
 function drawSpec(){
   const {x,w,h}=fit($('spec'));x.clearRect(0,0,w,h);
-  const fm=S.rpm/60*S.z1,f1=S.rpm/60,f2=f1*S.z1/S.z2;
-  const cur=spec[S.finish],oth=spec[other(S.finish)];if(!cur)return;
+  const F=freqs(),fm=F.fm,cur=spec[S.finish],oth=spec[other(S.finish)];if(!cur)return;
   let fa,fb;
-  if(S.view==='full'){fa=0;fb=Math.min(cur.fs/2,3.6*fm)}else{const span=Math.max(8*f1,10*f2);fa=fm-span;fb=fm+span}
-  const L=46,Rp=12,T=14,B=30,pw=w-L-Rp,phh=h-T-B;
-  const cols=Math.max(2,Math.floor(pw));
+  if(S.view==='full'){fa=0;fb=Math.min(cur.fs/2,3.6*fm)}
+  else{const span=isPair()?Math.min(Math.max(8*F.fA,10*F.fB),0.95*fm):Math.min(16*F.fc,0.95*fm);fa=fm-span;fb=fm+span}
+  const L=46,Rp=12,T=14,B=30,pw=w-L-Rp,phh=h-T-B,cols=Math.max(2,Math.floor(pw));
   function trace(sp){const out=new Float32Array(cols);for(let c=0;c<cols;c++){const f0=fa+(fb-fa)*c/cols,f1_=fa+(fb-fa)*(c+1)/cols;
     let k0=Math.max(1,Math.floor(f0/sp.df)),k1=Math.max(k0,Math.floor(f1_/sp.df));let m=-200;for(let k=k0;k<=k1&&k<sp.db.length;k++)m=Math.max(m,sp.db[k]);out[c]=m}return out}
   const tc=trace(cur),to=trace(oth);
@@ -278,14 +494,13 @@ function drawSpec(){
     x.fillStyle=C.muted;x.textAlign='right';x.textBaseline='middle';x.fillText(d,L-6,Y(d))}
   const st=nice(fb-fa,w<500?4:8);x.textAlign='center';x.textBaseline='top';
   for(let f=Math.ceil(fa/st)*st;f<=fb+1e-9;f+=st){const px=X(f);x.strokeStyle=C.grid;x.beginPath();x.moveTo(Math.round(px)+.5,T);x.lineTo(Math.round(px)+.5,T+phh);x.stroke();
-    x.fillStyle=C.muted;x.fillText((st<1?f.toFixed(1):Math.round(f))+'',px,T+phh+6)}
+    x.fillStyle=C.muted;x.fillText(st<1?f.toFixed(st<0.1?2:1):Math.round(f)+'',px,T+phh+6)}
   x.textAlign='right';x.fillText('Hz',L+pw,T+phh+18);
   x.save();x.translate(11,T+phh/2);x.rotate(-Math.PI/2);x.textAlign='center';x.textBaseline='middle';x.fillText('dB re 1 µm',0,0);x.restore();
-  // markers
   x.fillStyle=C.ink;x.textAlign='center';x.textBaseline='bottom';
-  if(S.view==='full'){for(let k=1;k<=3;k++){const f=k*fm;if(f>fb)break;const px=X(f);x.fillText(k+'×GMF',Math.min(L+pw-24,px),T+12)}}
-  else{x.fillText('1×GMF',X(fm),T+12);x.fillStyle=C.muted;
-    for(let n=-8;n<=8;n++){if(!n)continue;const f=fm+n*f1;if(f<fa||f>fb)continue;const px=X(f);x.beginPath();x.moveTo(px,T+phh);x.lineTo(px-3,T+phh-6);x.lineTo(px+3,T+phh-6);x.closePath();x.fill()}}
+  if(S.view==='full'){for(let k=1;k<=3;k++){const f=k*fm;if(f>fb)break;x.fillText(k+'×GMF',Math.min(L+pw-24,X(f)),T+12)}}
+  else{x.fillText('1×GMF',X(fm),T+12);x.fillStyle=C.muted;const sp=isPair()?F.fA:F.fc;
+    for(let n=-16;n<=16;n++){if(!n)continue;const f=fm+n*sp;if(f<fa||f>fb)continue;const px=X(f);x.beginPath();x.moveTo(px,T+phh);x.lineTo(px-3,T+phh-6);x.lineTo(px+3,T+phh-6);x.closePath();x.fill()}}
   function line(tr,col,lw){x.strokeStyle=col;x.lineWidth=lw;x.beginPath();for(let c=0;c<cols;c++){const px=L+c+.5,py=Y(tr[c]);c?x.lineTo(px,py):x.moveTo(px,py)}x.stroke()}
   x.save();x.beginPath();x.rect(L,T,pw,phh);x.clip();line(to,C.other,1);line(tc,C.accent,1.5);x.restore();
   x.strokeStyle=C.line;x.lineWidth=1;x.strokeRect(L+.5,T+.5,pw,phh);
@@ -293,7 +508,7 @@ function drawSpec(){
 
 let tv=0,flash=0,lastK=null;
 function drawWave(){
-  const cv=$('wave');const {x,w,h}=fit(cv);x.clearRect(0,0,w,h);
+  const {x,w,h}=fit($('wave'));x.clearRect(0,0,w,h);
   const a=wave[S.finish],b=wave[other(S.finish)];if(!a)return;
   let mx=1;for(let i=0;i<a.length;i++)mx=Math.max(mx,Math.abs(a[i]),Math.abs(b[i]));mx*=1.1;
   const L=40,Rp=8,T=8,B=8,pw=w-L-Rp,phh=h-T-B,Y=v=>T+phh/2-v/mx*phh/2;
@@ -304,47 +519,12 @@ function drawWave(){
   line(b,C.other,1);line(a,C.accent,1.4);
   const tr=realT()%wave.Tw,px=L+tr/wave.Tw*pw;x.strokeStyle=C.ink;x.globalAlpha=.55;x.beginPath();x.moveTo(px,T);x.lineTo(px,T+phh);x.stroke();x.globalAlpha=1;
 }
-
-const ANIM_REV_S=0.12; // pinion revolutions per second on screen
-function realT(){const f1=S.rpm/60;return (ANIM_REV_S*tv)/f1}
-function gear(x,cx,cy,z,m,ang,lapped){
-  const r=m*z/2,ra=r+m,rf=r-1.25*m,tau=2*Math.PI/z;
-  x.beginPath();
-  for(let k=0;k<z;k++){const c=ang+k*tau;
-    const P=(rad,a)=>[cx+rad*Math.cos(a),cy+rad*Math.sin(a)];
-    const pts=[P(rf,c-0.33*tau),P(r,c-0.25*tau),P(ra,c-0.12*tau),P(ra,c+0.12*tau),P(r,c+0.25*tau),P(rf,c+0.33*tau)];
-    if(k===0)x.moveTo(...pts[0]);else x.lineTo(...pts[0]);
-    for(let i=1;i<pts.length;i++)x.lineTo(...pts[i]);
-    x.arc(cx,cy,rf,c+0.33*tau,c+0.67*tau);
-  }
-  x.closePath();x.fillStyle=C.steel;x.fill();
-  x.lineWidth=lapped?1.6:1;x.strokeStyle=lapped?C.accent:C.edge;x.stroke();
-  const hub=Math.max(rf*0.3,m*1.4);
-  x.beginPath();x.arc(cx,cy,hub,0,2*Math.PI);x.fillStyle=C.panel;x.fill();x.lineWidth=1;x.strokeStyle=C.edge;x.stroke();
-  x.beginPath();x.arc(cx,cy,rf*0.62,0,2*Math.PI);x.strokeStyle=C.edge;x.globalAlpha=.35;x.stroke();x.globalAlpha=1;
-  x.beginPath();x.arc(cx+r*0.8*Math.cos(ang),cy+r*0.8*Math.sin(ang),Math.max(2.5,m*0.35),0,2*Math.PI);x.fillStyle=C.accent;x.fill();
-}
-function drawGears(){
-  const {x,w,h}=fit($('gears'));x.clearRect(0,0,w,h);
-  const z1=S.z1,z2=S.z2;const m=Math.min((w-24)/(z1+z2+2),(h-24)/(z2+2.5));
-  const span=m*(z1+z2)+2*m,cx1=(w-span)/2+m*z1/2+m,cx2=cx1+m*(z1+z2)/2,cy=h/2;
-  const th1=2*Math.PI*ANIM_REV_S*tv,tau2=2*Math.PI/z2;
-  const t=realT(),te=samplers[S.finish]?samplers[S.finish](t):0;
-  const jit=Math.max(-0.2*tau2,Math.min(0.2*tau2,-te*0.004));
-  const th2=Math.PI+tau2/2-th1*z1/z2+jit;
-  const lap=S.finish==='lapped';
-  gear(x,cx1,cy,z1,m,th1,lap);gear(x,cx2,cy,z2,m,th2,lap);
-  const k=Math.floor(S.rpm/60*z1*t);if(lastK!==null&&k!==lastK)flash=1;lastK=k;
-  if(flash>0.02){const px=cx1+m*z1/2,rad=m*1.8;const g=x.createRadialGradient(px,cy,0,px,cy,rad);
-    x.globalAlpha=flash*Math.min(1,0.35+Math.abs(te)/12);g.addColorStop(0,C.accent);g.addColorStop(1,'rgba(0,0,0,0)');x.fillStyle=g;x.beginPath();x.arc(px,cy,rad,0,2*Math.PI);x.fill();x.globalAlpha=1}
-  x.font=MONO;x.fillStyle=C.muted;x.textBaseline='top';x.textAlign='left';x.fillText('Pinion · '+z1+' teeth',8,8);x.textAlign='right';x.fillText('Ring gear · '+z2+' teeth',w-8,8);
-  x.textAlign='left';x.textBaseline='bottom';x.fillText('TE '+(te>=0?'+':'−')+Math.abs(te).toFixed(2)+' µm',8,h-6);
-}
+function realT(){return (TY().anim*tv)/freqs().fd}
 
 let animOn=!window.matchMedia('(prefers-reduced-motion: reduce)').matches,last=performance.now();
 $('play').textContent=animOn?'Pause':'Play';
 function loop(now){const dt=Math.min(0.05,(now-last)/1000);last=now;
-  if(animOn){tv+=dt;flash=Math.max(0,flash-dt*5)}
+  if(animOn){tv+=dt;flash=Math.max(0,flash-dt*5);for(let i=0;i<pFlash.length;i++)pFlash[i]=Math.max(0,pFlash[i]-dt*5)}
   if(samplers.unlapped){drawGears();drawWave()}
   requestAnimationFrame(loop)}
 $('play').addEventListener('click',()=>{animOn=!animOn;$('play').textContent=animOn?'Pause':'Play'});
@@ -352,11 +532,11 @@ $('play').addEventListener('click',()=>{animOn=!animOn;$('play').textContent=ani
 // ---------- audio ----------
 let actx=null,src=null,gainN=null,playing=false,audioTimer=null;
 function buildBuffer(){
-  const sr=actx.sampleRate,n=Math.floor(sr*2),F=Math.floor(sr*0.05),f=model(S.errs[S.finish]);
-  const x=new Float32Array(n+F);let py=0,px=0;const rc=1/(2*Math.PI*120),dt=1/sr,a=rc/(rc+dt);
-  for(let i=0;i<n+F;i++){const v=f(i/sr);py=a*(py+v-px);px=v;x[i]=Math.tanh(py*0.03)}
+  const sr=actx.sampleRate,n=Math.floor(sr*2),Fd=Math.floor(sr*0.05),f=model(S.errs[S.finish]),fm=freqs().fm;
+  const x=new Float32Array(n+Fd);let py=0,px=0;const fc=Math.max(15,Math.min(120,fm*0.5)),rc=1/(TAU*fc),dt=1/sr,a=rc/(rc+dt);
+  for(let i=0;i<n+Fd;i++){const v=f(i/sr);py=a*(py+v-px);px=v;x[i]=Math.tanh(py*0.03)}
   const buf=actx.createBuffer(1,n,sr),d=buf.getChannelData(0);
-  for(let i=0;i<n;i++)d[i]=x[i];for(let i=0;i<F;i++){const u=i/F;d[i]=x[i]*u+x[n+i]*(1-u)}
+  for(let i=0;i<n;i++)d[i]=x[i];for(let i=0;i<Fd;i++){const u=i/Fd;d[i]=x[i]*u+x[n+i]*(1-u)}
   return buf;
 }
 function startSrc(){src=actx.createBufferSource();src.buffer=buildBuffer();src.loop=true;src.connect(gainN);src.start()}
@@ -370,12 +550,22 @@ $('listen').addEventListener('click',async()=>{
 });
 
 // ---------- controls ----------
+function setRange(id,d,v){const el=$(id);el.min=d.min;el.max=d.max;if(d.step)el.step=d.step;el.value=v}
+function applyType(){
+  const T=TY(),c=cfg();
+  setRange('z1',T.z1,c.z1);setRange('z2',T.z2,c.z2);setRange('rpm',{min:T.rpm.min,max:T.rpm.max,step:50},c.rpm);
+  $('z1l').textContent=T.z1.l;$('z2l').textContent=T.z2.l;$('rpml').textContent=T.rpm.l;
+  $('betaRow').hidden=!T.beta;if(T.beta){setRange('beta',T.beta,c.beta);$('betal').textContent=T.beta.l}
+  $('npRow').hidden=!T.np;if(T.np)setRange('np',T.np,c.np);
+  $('gearTitle').textContent=T.title;$('typeNote').innerHTML=T.note;
+  lastK=null;pLastK=[];
+}
 function syncErrSliders(){const e=S.errs[S.finish];$('te').value=e.te;$('sc').value=e.sc;$('ro').value=e.ro}
+document.querySelectorAll('input[name=type]').forEach(r=>r.addEventListener('change',()=>{S.type=r.value;applyType();schedule()}));
 document.querySelectorAll('input[name=finish]').forEach(r=>r.addEventListener('change',()=>{S.finish=r.value;syncErrSliders();schedule()}));
 document.querySelectorAll('input[name=view]').forEach(r=>r.addEventListener('change',()=>{S.view=r.value;readouts();drawSpec()}));
-for(const id of ['z1','z2','rpm'])$(id).addEventListener('input',e=>{S[id]=+e.target.value;schedule()});
-const emap={te:'te',sc:'sc',ro:'ro'};
-for(const id in emap)$(id).addEventListener('input',e=>{S.errs[S.finish][emap[id]]=+e.target.value;schedule()});
+for(const id of ['z1','z2','rpm','beta','np'])$(id).addEventListener('input',e=>{cfg()[id]=+e.target.value;schedule()});
+for(const id of ['te','sc','ro'])$(id).addEventListener('input',e=>{S.errs[S.finish][id]=+e.target.value;schedule()});
 $('reset').addEventListener('click',()=>{S.errs={unlapped:{...PRESETS.unlapped},lapped:{...PRESETS.lapped}};syncErrSliders();schedule()});
 
 // ---------- theme & resize ----------
@@ -387,7 +577,7 @@ new MutationObserver(retheme).observe(document.documentElement,{attributes:true,
 new ResizeObserver(()=>{if(spec.unlapped){drawSpec();drawWave()}}).observe($('spec'));
 if(document.fonts&&document.fonts.ready)document.fonts.ready.then(()=>{if(spec.unlapped){drawSpec();drawWave()}});
 
-dirty=false;recompute();requestAnimationFrame(loop);
+applyType();dirty=false;recompute();requestAnimationFrame(loop);
 })();
 </script>
 
