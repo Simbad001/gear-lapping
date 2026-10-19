@@ -1,0 +1,394 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta property="og:type" content="website">
+<meta property="og:title" content="Gear Mesh Simulator">
+<meta property="og:description" content="See and hear transmission error, gear-mesh harmonics and sidebands, unlapped vs lapped.">
+<meta property="og:url" content="https://simbad001.github.io/gear-lapping/simulator/">
+<meta property="og:image" content="https://simbad001.github.io/gear-lapping/cover.jpg">
+<meta name="twitter:card" content="summary_large_image">
+<title>Gear Mesh Simulator</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<meta name="description" content="Interactive gear mesh simulation: transmission error, gear-mesh frequency, sidebands, and what lapping changes.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600&family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&display=swap">
+<style>
+/* Layout: instrument bench. Gear view + time trace left, controls and readouts right, spectrum full width below. */
+:root{
+  --bg:#eef1f3; --panel:#ffffff; --panel-2:#f5f7f8; --ink:#1b232b; --muted:#5a6874; --line:#d3dae0;
+  --accent:#9c6510; --on-accent:#ffffff; --other:#8a97a2; --good:#2c7a4b;
+  --steel:#a9b5bf; --steel-edge:#56646f; --grid:#e3e8ec;
+  --display:"Barlow Condensed","Arial Narrow",sans-serif;
+  --body:"IBM Plex Sans",system-ui,-apple-system,"Segoe UI",sans-serif;
+  --mono:"IBM Plex Mono",ui-monospace,"Cascadia Mono",Consolas,monospace;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --bg:#11161b; --panel:#182029; --panel-2:#1f2832; --ink:#e5eaee; --muted:#93a1ad; --line:#2a3540;
+  --accent:#e0a63a; --on-accent:#1a1206; --other:#64737f; --good:#5cc489;
+  --steel:#5e6e7b; --steel-edge:#a3b0bb; --grid:#222c36; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#11161b; --panel:#182029; --panel-2:#1f2832; --ink:#e5eaee; --muted:#93a1ad; --line:#2a3540;
+  --accent:#e0a63a; --on-accent:#1a1206; --other:#64737f; --good:#5cc489;
+  --steel:#5e6e7b; --steel-edge:#a3b0bb; --grid:#222c36; color-scheme:dark}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font:15px/1.55 var(--body)}
+.wrap{max-width:1180px;margin:0 auto;padding-block:28px 48px;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+.eyebrow{font:600 13px/1.2 var(--display);letter-spacing:.12em;text-transform:uppercase;color:var(--accent);margin:0}
+.eyebrow a{color:inherit}
+h1{font:600 clamp(2.1rem,5vw,3.3rem)/1.02 var(--display);letter-spacing:.01em;margin:.3rem 0 .5rem;text-wrap:balance}
+.lead{max-width:64ch;color:var(--muted);margin:0}
+.grid{display:grid;grid-template-columns:minmax(0,1.55fr) minmax(0,1fr);gap:16px;margin-top:22px}
+@media (max-width:880px){.grid{grid-template-columns:minmax(0,1fr)}}
+.col{display:flex;flex-direction:column;gap:16px;min-width:0}
+.panel{background:var(--panel);border:1px solid var(--line);border-radius:6px;padding:14px;min-width:0}
+.ph{display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;margin:0 0 10px}
+.ph h2{font:600 15px/1.1 var(--display);letter-spacing:.11em;text-transform:uppercase;color:var(--muted);margin:0}
+canvas{display:block;width:100%}
+#gears{height:300px}#wave{height:140px}#spec{height:330px}
+@media (max-width:600px){#gears{height:230px}#spec{height:250px}}
+.seg{display:inline-flex;border:1px solid var(--line);border-radius:4px;overflow:hidden;position:relative}
+.seg input{position:absolute;opacity:0;pointer-events:none}
+.seg label{padding:8px 14px;font:600 14px/1 var(--display);letter-spacing:.07em;text-transform:uppercase;cursor:pointer;color:var(--muted);background:var(--panel-2)}
+.seg label+input+label{border-left:1px solid var(--line)}
+.seg input:checked+label{background:var(--accent);color:var(--on-accent)}
+.seg input:focus-visible+label{outline:2px solid var(--ink);outline-offset:-3px}
+.stack{display:flex;flex-direction:column;gap:14px}
+.ctl{display:grid;grid-template-columns:1fr auto;gap:2px 10px;align-items:baseline}
+.ctl label{font-size:14px}
+.ctl output{font:500 13px var(--mono);font-variant-numeric:tabular-nums}
+.ctl input[type=range]{grid-column:1/-1;width:100%;accent-color:var(--accent);margin:4px 0 0}
+.sub{font:600 13px/1.2 var(--display);letter-spacing:.1em;text-transform:uppercase;color:var(--muted);margin:4px 0 0;display:flex;justify-content:space-between;align-items:center;gap:8px}
+.sub b{color:var(--accent);font-weight:600}
+dl.read{display:grid;grid-template-columns:auto 1fr;gap:7px 14px;margin:0}
+dl.read dt{color:var(--muted);font-size:13.5px}
+dl.read dd{margin:0;font:500 13.5px var(--mono);text-align:right;font-variant-numeric:tabular-nums}
+dl.read .hi{color:var(--good)}
+.btns{display:flex;gap:8px;flex-wrap:wrap}
+button.btn{font:600 14px/1 var(--display);letter-spacing:.08em;text-transform:uppercase;padding:9px 14px;border-radius:4px;border:1px solid var(--line);background:var(--panel-2);color:var(--ink);cursor:pointer}
+button.btn.primary{background:var(--accent);border-color:var(--accent);color:var(--on-accent)}
+button.link{background:none;border:0;padding:0;color:var(--accent);font:500 12.5px var(--body);cursor:pointer;text-decoration:underline;letter-spacing:0;text-transform:none}
+button:focus-visible{outline:2px solid var(--ink);outline-offset:2px}
+.legend{display:flex;gap:14px;font:500 12.5px var(--mono);color:var(--muted);flex-wrap:wrap;align-items:center}
+.sw{display:inline-block;width:16px;height:3px;vertical-align:middle;margin-right:6px;border-radius:2px}
+.note{font-size:13px;color:var(--muted);margin:8px 0 0}
+.explain{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:16px;margin-top:16px}
+@media (max-width:780px){.explain{grid-template-columns:minmax(0,1fr)}}
+.explain h3{font:600 18px/1.2 var(--display);letter-spacing:.02em;margin:0 0 6px}
+.explain p{margin:0;color:var(--muted);font-size:14px}
+.foot{margin-top:18px;font-size:13px;color:var(--muted);max-width:90ch}
+.foot a{color:var(--accent)}
+</style>
+
+<div class="wrap">
+  <header>
+    <p class="eyebrow">Companion to <a href="https://simbad001.github.io/gear-lapping/">Gear Lapping: More Than Noise</a></p>
+    <h1>Gear Mesh Simulator</h1>
+    <p class="lead">Every tooth engagement pushes the gear pair a little off its ideal motion. That transmission error repeats at the gear-mesh frequency and becomes the whine you hear. Change the tooth counts, speed and tooth errors, then switch between unlapped and lapped to see, and hear, what lapping changes.</p>
+  </header>
+
+  <div class="grid">
+    <div class="col">
+      <section class="panel" aria-label="Gear pair animation">
+        <div class="ph">
+          <h2>Gear pair in mesh</h2>
+          <div class="btns">
+            <button class="btn" id="play" type="button">Pause</button>
+          </div>
+        </div>
+        <canvas id="gears" role="img" aria-label="Animated pinion and ring gear in mesh. The mesh point flashes at every tooth engagement."></canvas>
+        <p class="note">Shown slowed down, with the error motion exaggerated so you can see it. Gold dots mark tooth 1 on each gear; with a hunting-tooth ratio they meet again only after many turns.</p>
+      </section>
+      <section class="panel" aria-label="Transmission error over time">
+        <div class="ph">
+          <h2>Transmission error</h2>
+          <div class="legend"><span><span class="sw" id="lgA"></span><span id="lgAt">Unlapped</span></span><span><span class="sw" id="lgB"></span><span id="lgBt">Lapped</span></span></div>
+        </div>
+        <canvas id="wave" role="img" aria-label="Transmission error over one ring gear revolution, current finish against the other finish."></canvas>
+        <p class="note" id="waveNote"></p>
+      </section>
+    </div>
+
+    <div class="col">
+      <section class="panel stack" aria-label="Controls">
+        <div class="ph" style="margin:0"><h2>Finish</h2>
+          <div class="seg" role="radiogroup" aria-label="Gear finish">
+            <input type="radio" name="finish" id="fUn" value="unlapped" checked><label for="fUn">Unlapped</label>
+            <input type="radio" name="finish" id="fLa" value="lapped"><label for="fLa">Lapped</label>
+          </div>
+        </div>
+        <div class="ctl"><label for="z1">Pinion teeth</label><output id="z1o" for="z1"></output><input type="range" id="z1" min="8" max="40" step="1" value="12"></div>
+        <div class="ctl"><label for="z2">Ring gear teeth</label><output id="z2o" for="z2"></output><input type="range" id="z2" min="20" max="80" step="1" value="37"></div>
+        <div class="ctl"><label for="rpm">Pinion speed</label><output id="rpmo" for="rpm"></output><input type="range" id="rpm" min="300" max="6000" step="50" value="3000"></div>
+        <p class="sub"><span>Tooth errors · <b id="errState">Unlapped</b></span><button class="link" id="reset" type="button">Reset errors</button></p>
+        <div class="ctl"><label for="te">Mesh error amplitude</label><output id="teo" for="te"></output><input type="range" id="te" min="0" max="15" step="0.5" value="8"></div>
+        <div class="ctl"><label for="sc">Tooth-to-tooth spacing error</label><output id="sco" for="sc"></output><input type="range" id="sc" min="0" max="10" step="0.1" value="5"></div>
+        <div class="ctl"><label for="ro">Runout</label><output id="roo" for="ro"></output><input type="range" id="ro" min="0" max="30" step="1" value="15"></div>
+        <div class="btns"><button class="btn primary" id="listen" type="button">Listen</button></div>
+        <p class="note" style="margin:0">Plays the simulated mesh at its real frequencies. Switch the finish while it plays to hear the change.</p>
+      </section>
+
+      <section class="panel" aria-label="Readouts">
+        <div class="ph"><h2>Frequencies</h2></div>
+        <dl class="read">
+          <dt>Pinion shaft, f₁</dt><dd id="rF1"></dd>
+          <dt>Ring gear shaft, f₂</dt><dd id="rF2"></dd>
+          <dt>Gear-mesh frequency</dt><dd id="rGmf"></dd>
+          <dt>Ratio</dt><dd id="rRatio"></dd>
+          <dt>Hunting-tooth frequency</dt><dd id="rHt"></dd>
+          <dt>1×GMF level, unlapped</dt><dd id="rLu"></dd>
+          <dt>1×GMF level, lapped</dt><dd id="rLl"></dd>
+          <dt>Change from lapping</dt><dd id="rD" class="hi"></dd>
+        </dl>
+      </section>
+    </div>
+  </div>
+
+  <section class="panel" style="margin-top:16px" aria-label="Spectrum">
+    <div class="ph">
+      <h2>Transmission error spectrum</h2>
+      <div class="seg" role="radiogroup" aria-label="Spectrum view">
+        <input type="radio" name="view" id="vFull" value="full" checked><label for="vFull">Harmonics</label>
+        <input type="radio" name="view" id="vZoom" value="zoom"><label for="vZoom">Sidebands</label>
+      </div>
+    </div>
+    <canvas id="spec" role="img" aria-label="Frequency spectrum of transmission error for the current and the other finish."></canvas>
+    <p class="note" id="specNote"></p>
+  </section>
+
+  <div class="explain">
+    <div class="panel"><h3>Mesh frequency</h3><p>Teeth engage at pinion teeth × shaft speed. Errors that repeat on every tooth show up as tall lines at 1×, 2× and 3× this frequency. These lines are the whine, and lapping lowers them most.</p></div>
+    <div class="panel"><h3>Sidebands</h3><p>Runout and eccentricity make the mesh force rise and fall once per revolution. That modulation puts sidebands on each side of the mesh lines, spaced at the shaft frequency. Condition monitoring watches them grow as gears wear.</p></div>
+    <div class="panel"><h3>Tooth-to-tooth errors</h3><p>Uneven tooth spacing differs from tooth to tooth, so it repeats once per revolution. It spreads energy over many shaft orders and raises the floor between the mesh lines. Lapped pairs show a lower, cleaner floor.</p></div>
+  </div>
+
+  <p class="foot">Simplified model, drawn as a spur pair. Spiral bevel and hypoid sets mesh at the same tooth frequency. Transmission error is the sum of the mesh harmonics, a fixed pattern of tooth spacing errors on each gear, and runout that modulates the mesh once per revolution. The spectrum is a 65,536-point FFT with a Hann window, in dB re 1 µm. The error values are illustrative, not measurements. Read the article: <a href="https://simbad001.github.io/gear-lapping/">Gear Lapping: More Than Noise</a>.</p>
+</div>
+
+<script>
+(function(){
+const $=id=>document.getElementById(id);
+const PRESETS={unlapped:{te:8,sc:5,ro:15},lapped:{te:3,sc:1.2,ro:9}};
+const S={finish:'unlapped',z1:12,z2:37,rpm:3000,view:'full',
+  errs:{unlapped:{...PRESETS.unlapped},lapped:{...PRESETS.lapped}}};
+const other=f=>f==='unlapped'?'lapped':'unlapped';
+const cap=s=>s[0].toUpperCase()+s.slice(1);
+const gcd=(a,b)=>{while(b){[a,b]=[b,a%b]}return a};
+const fmtHz=v=>(v>=100?v.toFixed(0):v>=10?v.toFixed(1):v.toFixed(2))+' Hz';
+
+// ---------- model ----------
+function rng(seed){let a=seed>>>0;return function(){a=a+0x6D2B79F5|0;let t=Math.imul(a^a>>>15,1|a);t=t+Math.imul(t^t>>>7,61|t)^t;return((t^t>>>14)>>>0)/4294967296}}
+function gauss(r){let u=0;while(u===0)u=r();return Math.sqrt(-2*Math.log(u))*Math.cos(2*Math.PI*r())}
+function pattern(z,seed){const r=rng(seed*7919+z*104729);const a=new Float64Array(z);let m=0;for(let i=0;i<z;i++){a[i]=gauss(r);m+=a[i]}m/=z;for(let i=0;i<z;i++)a[i]-=m;return a}
+function model(e){
+  const z1=S.z1,z2=S.z2,f1=S.rpm/60,f2=f1*z1/z2,fm=f1*z1;
+  const p1=pattern(z1,1),p2=pattern(z2,2);
+  const T=e.te,SC=e.sc,R=e.ro,m1=Math.min(0.6,R/50),m2=0.6*m1,TAU=2*Math.PI;
+  return function(t){
+    const p=fm*t,k=Math.floor(p),fr=p-k;
+    const i0=((k%z1)+z1)%z1,j0=((k%z2)+z2)%z2,i1=(i0+1)%z1,j1=(j0+1)%z2;
+    let s=0;if(fr>0.75){const u=(fr-0.75)/0.25;s=u*u*(3-2*u)}
+    const ep=SC*((1-s)*(p1[i0]+p2[j0])+s*(p1[i1]+p2[j1]));
+    const ph=TAU*p;
+    const mesh=T*(Math.cos(ph)+0.35*Math.cos(2*ph+0.7)+0.15*Math.cos(3*ph+1.9));
+    const a1=TAU*f1*t,a2=TAU*f2*t+0.4;
+    const mod=1+m1*Math.sin(a1)+m2*Math.sin(a2);
+    return (mesh+ep)*mod+R*(0.5*Math.sin(a1)+0.3*Math.sin(a2+0.6));
+  };
+}
+function fft(re,im){
+  const n=re.length;
+  for(let i=1,j=0;i<n;i++){let b=n>>1;for(;j&b;b>>=1)j^=b;j^=b;if(i<j){let t=re[i];re[i]=re[j];re[j]=t;t=im[i];im[i]=im[j];im[j]=t}}
+  for(let len=2;len<=n;len<<=1){const ang=-2*Math.PI/len,wr=Math.cos(ang),wi=Math.sin(ang),h=len>>1;
+    for(let i=0;i<n;i+=len){let cr=1,ci=0;for(let k=0;k<h;k++){const a=i+k,b=a+h;
+      const xr=re[b]*cr-im[b]*ci,xi=re[b]*ci+im[b]*cr;re[b]=re[a]-xr;im[b]=im[a]-xi;re[a]+=xr;im[a]+=xi;
+      const t=cr*wr-ci*wi;ci=cr*wi+ci*wr;cr=t}}}
+}
+const N=65536;
+function spectrum(e){
+  const fm=S.rpm/60*S.z1,fs=Math.max(4096,Math.pow(2,Math.ceil(Math.log2(fm*8))));
+  const f=model(e),re=new Float64Array(N),im=new Float64Array(N),nr=rng(99);
+  for(let n=0;n<N;n++){const w=0.5-0.5*Math.cos(2*Math.PI*n/(N-1));re[n]=(f(n/fs)+0.03*gauss(nr))*w}
+  fft(re,im);
+  const db=new Float32Array(N/2);
+  for(let k=0;k<N/2;k++){const a=4*Math.hypot(re[k],im[k])/N;db[k]=20*Math.log10(Math.max(a,1e-5))}
+  return {fs,df:fs/N,db};
+}
+function peakAt(sp,f){const k=Math.round(f/sp.df);let m=-200;for(let i=k-3;i<=k+3;i++)if(i>0&&i<sp.db.length)m=Math.max(m,sp.db[i]);return m}
+
+// ---------- state & caching ----------
+let spec={},wave={},samplers={},dirty=true;
+function recompute(){
+  const fm=S.rpm/60*S.z1;
+  for(const k of ['unlapped','lapped']){spec[k]=spectrum(S.errs[k]);samplers[k]=model(S.errs[k])}
+  const cycles=Math.min(S.z2,60),Tw=cycles/fm,P=cycles*40;
+  for(const k of ['unlapped','lapped']){const a=new Float32Array(P);for(let i=0;i<P;i++)a[i]=samplers[k](i/P*Tw);wave[k]=a}
+  wave.Tw=Tw;wave.cycles=cycles;
+  readouts();drawSpec();drawWave();
+  if(playing)restartAudio();
+}
+function schedule(){if(!dirty){dirty=true;requestAnimationFrame(()=>{dirty=false;recompute()})}}
+
+function readouts(){
+  const f1=S.rpm/60,f2=f1*S.z1/S.z2,fm=f1*S.z1,g=gcd(S.z1,S.z2);
+  $('z1o').textContent=S.z1;$('z2o').textContent=S.z2;$('rpmo').textContent=S.rpm+' rpm';
+  const e=S.errs[S.finish];$('teo').textContent=e.te.toFixed(1)+' µm';$('sco').textContent=e.sc.toFixed(1)+' µm';$('roo').textContent=e.ro.toFixed(0)+' µm';
+  $('errState').textContent=cap(S.finish);
+  $('rF1').textContent=fmtHz(f1);$('rF2').textContent=fmtHz(f2);$('rGmf').textContent=fmtHz(fm);
+  $('rRatio').textContent=(S.z2/S.z1).toFixed(3)+' : 1';
+  $('rHt').textContent=fmtHz(fm*g/(S.z1*S.z2))+(g===1?'':'  (common factor '+g+')');
+  const lu=peakAt(spec.unlapped,fm),ll=peakAt(spec.lapped,fm);
+  $('rLu').textContent=lu.toFixed(1)+' dB';$('rLl').textContent=ll.toFixed(1)+' dB';
+  const d=ll-lu;$('rD').textContent=(d>0?'+':d<0?'−':'')+Math.abs(d).toFixed(1)+' dB';
+  $('lgAt').textContent=cap(S.finish)+' (shown)';$('lgBt').textContent=cap(other(S.finish));
+  $('waveNote').textContent='One ring gear revolution'+(S.z2>60?' (first 60 mesh cycles)':'')+': '+wave.cycles+' mesh cycles in '+(wave.Tw*1000).toFixed(1)+' ms. Micrometres.';
+  $('specNote').textContent=S.view==='full'
+    ? 'Lines at 1×, 2× and 3× the gear-mesh frequency ('+fmtHz(fm)+'). dB re 1 µm.'
+    : 'Centred on 1×GMF. Sidebands every '+fmtHz(f1)+' (pinion) and '+fmtHz(f2)+' (ring gear) come from runout modulating the mesh.';
+}
+
+// ---------- drawing ----------
+let C={};
+function tokens(){const cs=getComputedStyle(document.documentElement);const g=n=>cs.getPropertyValue(n).trim();
+  C={bg:g('--bg'),panel:g('--panel'),ink:g('--ink'),muted:g('--muted'),line:g('--line'),accent:g('--accent'),other:g('--other'),steel:g('--steel'),edge:g('--steel-edge'),grid:g('--grid')};
+  $('lgA').style.background=C.accent;$('lgB').style.background=C.other;}
+function fit(cv){const r=cv.getBoundingClientRect(),d=window.devicePixelRatio||1;const w=Math.max(1,Math.round(r.width*d)),h=Math.max(1,Math.round(r.height*d));
+  if(cv.width!==w||cv.height!==h){cv.width=w;cv.height=h}const x=cv.getContext('2d');x.setTransform(d,0,0,d,0,0);return {x,w:r.width,h:r.height}}
+function nice(range,target){const raw=range/target,p=Math.pow(10,Math.floor(Math.log10(raw))),q=raw/p;return (q<1.5?1:q<3.5?2:q<7.5?5:10)*p}
+const MONO='500 11px "IBM Plex Mono", ui-monospace, monospace';
+
+function drawSpec(){
+  const {x,w,h}=fit($('spec'));x.clearRect(0,0,w,h);
+  const fm=S.rpm/60*S.z1,f1=S.rpm/60,f2=f1*S.z1/S.z2;
+  const cur=spec[S.finish],oth=spec[other(S.finish)];if(!cur)return;
+  let fa,fb;
+  if(S.view==='full'){fa=0;fb=Math.min(cur.fs/2,3.6*fm)}else{const span=Math.max(8*f1,10*f2);fa=fm-span;fb=fm+span}
+  const L=46,Rp=12,T=14,B=30,pw=w-L-Rp,phh=h-T-B;
+  const cols=Math.max(2,Math.floor(pw));
+  function trace(sp){const out=new Float32Array(cols);for(let c=0;c<cols;c++){const f0=fa+(fb-fa)*c/cols,f1_=fa+(fb-fa)*(c+1)/cols;
+    let k0=Math.max(1,Math.floor(f0/sp.df)),k1=Math.max(k0,Math.floor(f1_/sp.df));let m=-200;for(let k=k0;k<=k1&&k<sp.db.length;k++)m=Math.max(m,sp.db[k]);out[c]=m}return out}
+  const tc=trace(cur),to=trace(oth);
+  let mx=-200;for(let c=0;c<cols;c++)mx=Math.max(mx,tc[c],to[c]);
+  const top=Math.ceil((mx+4)/10)*10,bot=top-70;
+  const X=f=>L+(f-fa)/(fb-fa)*pw,Y=d=>T+(top-Math.max(bot,Math.min(top,d)))/(top-bot)*phh;
+  x.font=MONO;x.lineWidth=1;
+  for(let d=bot;d<=top;d+=10){x.strokeStyle=C.grid;x.beginPath();x.moveTo(L,Y(d)+.5);x.lineTo(L+pw,Y(d)+.5);x.stroke();
+    x.fillStyle=C.muted;x.textAlign='right';x.textBaseline='middle';x.fillText(d,L-6,Y(d))}
+  const st=nice(fb-fa,w<500?4:8);x.textAlign='center';x.textBaseline='top';
+  for(let f=Math.ceil(fa/st)*st;f<=fb+1e-9;f+=st){const px=X(f);x.strokeStyle=C.grid;x.beginPath();x.moveTo(Math.round(px)+.5,T);x.lineTo(Math.round(px)+.5,T+phh);x.stroke();
+    x.fillStyle=C.muted;x.fillText((st<1?f.toFixed(1):Math.round(f))+'',px,T+phh+6)}
+  x.textAlign='right';x.fillText('Hz',L+pw,T+phh+18);
+  x.save();x.translate(11,T+phh/2);x.rotate(-Math.PI/2);x.textAlign='center';x.textBaseline='middle';x.fillText('dB re 1 µm',0,0);x.restore();
+  // markers
+  x.fillStyle=C.ink;x.textAlign='center';x.textBaseline='bottom';
+  if(S.view==='full'){for(let k=1;k<=3;k++){const f=k*fm;if(f>fb)break;const px=X(f);x.fillText(k+'×GMF',Math.min(L+pw-24,px),T+12)}}
+  else{x.fillText('1×GMF',X(fm),T+12);x.fillStyle=C.muted;
+    for(let n=-8;n<=8;n++){if(!n)continue;const f=fm+n*f1;if(f<fa||f>fb)continue;const px=X(f);x.beginPath();x.moveTo(px,T+phh);x.lineTo(px-3,T+phh-6);x.lineTo(px+3,T+phh-6);x.closePath();x.fill()}}
+  function line(tr,col,lw){x.strokeStyle=col;x.lineWidth=lw;x.beginPath();for(let c=0;c<cols;c++){const px=L+c+.5,py=Y(tr[c]);c?x.lineTo(px,py):x.moveTo(px,py)}x.stroke()}
+  x.save();x.beginPath();x.rect(L,T,pw,phh);x.clip();line(to,C.other,1);line(tc,C.accent,1.5);x.restore();
+  x.strokeStyle=C.line;x.lineWidth=1;x.strokeRect(L+.5,T+.5,pw,phh);
+}
+
+let tv=0,flash=0,lastK=null;
+function drawWave(){
+  const cv=$('wave');const {x,w,h}=fit(cv);x.clearRect(0,0,w,h);
+  const a=wave[S.finish],b=wave[other(S.finish)];if(!a)return;
+  let mx=1;for(let i=0;i<a.length;i++)mx=Math.max(mx,Math.abs(a[i]),Math.abs(b[i]));mx*=1.1;
+  const L=40,Rp=8,T=8,B=8,pw=w-L-Rp,phh=h-T-B,Y=v=>T+phh/2-v/mx*phh/2;
+  x.font=MONO;x.strokeStyle=C.grid;x.lineWidth=1;
+  const st=nice(2*mx,4);for(let v=-Math.floor(mx/st)*st;v<=mx;v+=st){x.beginPath();x.moveTo(L,Math.round(Y(v))+.5);x.lineTo(L+pw,Math.round(Y(v))+.5);x.stroke();
+    x.fillStyle=C.muted;x.textAlign='right';x.textBaseline='middle';x.fillText(Math.round(v*10)/10,L-6,Y(v))}
+  function line(arr,col,lw){x.strokeStyle=col;x.lineWidth=lw;x.beginPath();for(let i=0;i<arr.length;i++){const px=L+i/(arr.length-1)*pw,py=Y(arr[i]);i?x.lineTo(px,py):x.moveTo(px,py)}x.stroke()}
+  line(b,C.other,1);line(a,C.accent,1.4);
+  const tr=realT()%wave.Tw,px=L+tr/wave.Tw*pw;x.strokeStyle=C.ink;x.globalAlpha=.55;x.beginPath();x.moveTo(px,T);x.lineTo(px,T+phh);x.stroke();x.globalAlpha=1;
+}
+
+const ANIM_REV_S=0.12; // pinion revolutions per second on screen
+function realT(){const f1=S.rpm/60;return (ANIM_REV_S*tv)/f1}
+function gear(x,cx,cy,z,m,ang,lapped){
+  const r=m*z/2,ra=r+m,rf=r-1.25*m,tau=2*Math.PI/z;
+  x.beginPath();
+  for(let k=0;k<z;k++){const c=ang+k*tau;
+    const P=(rad,a)=>[cx+rad*Math.cos(a),cy+rad*Math.sin(a)];
+    const pts=[P(rf,c-0.33*tau),P(r,c-0.25*tau),P(ra,c-0.12*tau),P(ra,c+0.12*tau),P(r,c+0.25*tau),P(rf,c+0.33*tau)];
+    if(k===0)x.moveTo(...pts[0]);else x.lineTo(...pts[0]);
+    for(let i=1;i<pts.length;i++)x.lineTo(...pts[i]);
+    x.arc(cx,cy,rf,c+0.33*tau,c+0.67*tau);
+  }
+  x.closePath();x.fillStyle=C.steel;x.fill();
+  x.lineWidth=lapped?1.6:1;x.strokeStyle=lapped?C.accent:C.edge;x.stroke();
+  const hub=Math.max(rf*0.3,m*1.4);
+  x.beginPath();x.arc(cx,cy,hub,0,2*Math.PI);x.fillStyle=C.panel;x.fill();x.lineWidth=1;x.strokeStyle=C.edge;x.stroke();
+  x.beginPath();x.arc(cx,cy,rf*0.62,0,2*Math.PI);x.strokeStyle=C.edge;x.globalAlpha=.35;x.stroke();x.globalAlpha=1;
+  x.beginPath();x.arc(cx+r*0.8*Math.cos(ang),cy+r*0.8*Math.sin(ang),Math.max(2.5,m*0.35),0,2*Math.PI);x.fillStyle=C.accent;x.fill();
+}
+function drawGears(){
+  const {x,w,h}=fit($('gears'));x.clearRect(0,0,w,h);
+  const z1=S.z1,z2=S.z2;const m=Math.min((w-24)/(z1+z2+2),(h-24)/(z2+2.5));
+  const span=m*(z1+z2)+2*m,cx1=(w-span)/2+m*z1/2+m,cx2=cx1+m*(z1+z2)/2,cy=h/2;
+  const th1=2*Math.PI*ANIM_REV_S*tv,tau2=2*Math.PI/z2;
+  const t=realT(),te=samplers[S.finish]?samplers[S.finish](t):0;
+  const jit=Math.max(-0.2*tau2,Math.min(0.2*tau2,-te*0.004));
+  const th2=Math.PI+tau2/2-th1*z1/z2+jit;
+  const lap=S.finish==='lapped';
+  gear(x,cx1,cy,z1,m,th1,lap);gear(x,cx2,cy,z2,m,th2,lap);
+  const k=Math.floor(S.rpm/60*z1*t);if(lastK!==null&&k!==lastK)flash=1;lastK=k;
+  if(flash>0.02){const px=cx1+m*z1/2,rad=m*1.8;const g=x.createRadialGradient(px,cy,0,px,cy,rad);
+    x.globalAlpha=flash*Math.min(1,0.35+Math.abs(te)/12);g.addColorStop(0,C.accent);g.addColorStop(1,'rgba(0,0,0,0)');x.fillStyle=g;x.beginPath();x.arc(px,cy,rad,0,2*Math.PI);x.fill();x.globalAlpha=1}
+  x.font=MONO;x.fillStyle=C.muted;x.textBaseline='top';x.textAlign='left';x.fillText('Pinion · '+z1+' teeth',8,8);x.textAlign='right';x.fillText('Ring gear · '+z2+' teeth',w-8,8);
+  x.textAlign='left';x.textBaseline='bottom';x.fillText('TE '+(te>=0?'+':'−')+Math.abs(te).toFixed(2)+' µm',8,h-6);
+}
+
+let animOn=!window.matchMedia('(prefers-reduced-motion: reduce)').matches,last=performance.now();
+$('play').textContent=animOn?'Pause':'Play';
+function loop(now){const dt=Math.min(0.05,(now-last)/1000);last=now;
+  if(animOn){tv+=dt;flash=Math.max(0,flash-dt*5)}
+  if(samplers.unlapped){drawGears();drawWave()}
+  requestAnimationFrame(loop)}
+$('play').addEventListener('click',()=>{animOn=!animOn;$('play').textContent=animOn?'Pause':'Play'});
+
+// ---------- audio ----------
+let actx=null,src=null,gainN=null,playing=false,audioTimer=null;
+function buildBuffer(){
+  const sr=actx.sampleRate,n=Math.floor(sr*2),F=Math.floor(sr*0.05),f=model(S.errs[S.finish]);
+  const x=new Float32Array(n+F);let py=0,px=0;const rc=1/(2*Math.PI*120),dt=1/sr,a=rc/(rc+dt);
+  for(let i=0;i<n+F;i++){const v=f(i/sr);py=a*(py+v-px);px=v;x[i]=Math.tanh(py*0.03)}
+  const buf=actx.createBuffer(1,n,sr),d=buf.getChannelData(0);
+  for(let i=0;i<n;i++)d[i]=x[i];for(let i=0;i<F;i++){const u=i/F;d[i]=x[i]*u+x[n+i]*(1-u)}
+  return buf;
+}
+function startSrc(){src=actx.createBufferSource();src.buffer=buildBuffer();src.loop=true;src.connect(gainN);src.start()}
+function restartAudio(){clearTimeout(audioTimer);audioTimer=setTimeout(()=>{if(!playing)return;try{src&&src.stop()}catch(e){}startSrc()},120)}
+$('listen').addEventListener('click',async()=>{
+  if(playing){playing=false;try{src&&src.stop()}catch(e){}$('listen').textContent='Listen';return}
+  try{actx=actx||new (window.AudioContext||window.webkitAudioContext)();await actx.resume();
+    if(!gainN){gainN=actx.createGain();gainN.gain.value=0.35;gainN.connect(actx.destination)}
+    playing=true;startSrc();$('listen').textContent='Stop'}
+  catch(e){$('listen').textContent='Audio unavailable'}
+});
+
+// ---------- controls ----------
+function syncErrSliders(){const e=S.errs[S.finish];$('te').value=e.te;$('sc').value=e.sc;$('ro').value=e.ro}
+document.querySelectorAll('input[name=finish]').forEach(r=>r.addEventListener('change',()=>{S.finish=r.value;syncErrSliders();schedule()}));
+document.querySelectorAll('input[name=view]').forEach(r=>r.addEventListener('change',()=>{S.view=r.value;readouts();drawSpec()}));
+for(const id of ['z1','z2','rpm'])$(id).addEventListener('input',e=>{S[id]=+e.target.value;schedule()});
+const emap={te:'te',sc:'sc',ro:'ro'};
+for(const id in emap)$(id).addEventListener('input',e=>{S.errs[S.finish][emap[id]]=+e.target.value;schedule()});
+$('reset').addEventListener('click',()=>{S.errs={unlapped:{...PRESETS.unlapped},lapped:{...PRESETS.lapped}};syncErrSliders();schedule()});
+
+// ---------- theme & resize ----------
+tokens();
+const mq=window.matchMedia('(prefers-color-scheme: dark)');
+const retheme=()=>{tokens();drawSpec();drawWave()};
+mq.addEventListener?mq.addEventListener('change',retheme):mq.addListener(retheme);
+new MutationObserver(retheme).observe(document.documentElement,{attributes:true,attributeFilter:['data-theme']});
+new ResizeObserver(()=>{if(spec.unlapped){drawSpec();drawWave()}}).observe($('spec'));
+if(document.fonts&&document.fonts.ready)document.fonts.ready.then(()=>{if(spec.unlapped){drawSpec();drawWave()}});
+
+dirty=false;recompute();requestAnimationFrame(loop);
+})();
+</script>
+
+</html>
