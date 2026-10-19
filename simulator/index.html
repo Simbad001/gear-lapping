@@ -127,10 +127,10 @@ button:focus-visible{outline:2px solid var(--ink);outline-offset:2px}
         </div>
         <canvas id="gears" role="img" aria-label="Animated gear set. The mesh flashes at every tooth engagement."></canvas>
         <div id="g3" hidden role="img" aria-label="3D model of the gear set. Drag to rotate, scroll or pinch to zoom.">
-          <span class="ov" style="left:10px;top:8px">Drag to rotate · scroll or pinch to zoom · right-drag to pan</span>
+          <span class="ov" id="ov3hint" style="left:10px;top:8px">Drag to rotate · scroll to zoom · right-drag to pan</span>
           <span class="ov" id="ov3te" style="left:10px;bottom:8px"></span>
         </div>
-        <p class="note" id="note3d" hidden>Gold is marking compound; bare steel shows where the teeth have touched, which is the contact pattern. Unlapped: a small patch at the toe and tip edge. Lapped: a larger patch centred on the tooth. Illustrative, not measured.</p>
+        <p class="note" id="note3d" hidden>Gold is marking compound; bare steel shows where the teeth have touched, which is the contact pattern. Unlapped: a small patch at the toe and tip edge. Lapped: a larger patch centred on the tooth. Illustrative, not measured. Teeth use spherical involute profiles and circular-arc (face-milled) tooth traces; the hypoid pinion position comes from tangent pitch cones with a Gleason-style offset correction.</p>
         <p class="typenote" id="typeNote"></p>
         <p class="note">Shown slowed down, with the error motion exaggerated so you can see it. Gold dots and lines mark tooth 1.</p>
       </section>
@@ -190,7 +190,7 @@ button:focus-visible{outline:2px solid var(--ink);outline-offset:2px}
     <div class="panel"><h3>Sidebands</h3><p>Runout makes the mesh force rise and fall once per revolution, which puts sidebands around the mesh lines at the shaft frequencies. In a planetary set, each planet passing the sensor does the same at the carrier frequency.</p></div>
   </div>
 
-  <p class="foot">Simplified model for teaching, not design. Transmission error is the sum of the mesh harmonics, scaled by the face overlap of each gear type; a fixed pattern of tooth spacing errors on each gear; runout that modulates the mesh once per revolution; and a sliding-friction floor that is highest for hypoid and worm sets. The planetary model sums each planet's mesh, weighted by its distance from a sensor on the fixed ring. The spectrum is a 65,536-point FFT with a Hann window, in dB re 1 µm. Error values and efficiency ranges are illustrative, not measurements. Read the article: <a href="https://simbad001.github.io/gear-lapping/">Gear Lapping: More Than Noise</a>.</p>
+  <p class="foot">Simplified model for teaching, not design. Transmission error is the sum of the mesh harmonics, scaled by the face overlap of each gear type; a fixed pattern of tooth spacing errors on each gear; runout that modulates the mesh once per revolution; and a sliding-friction floor that is highest for hypoid and worm sets. The planetary model sums each planet's mesh, weighted by its distance from a sensor on the fixed ring. The spectrum is a 65,536-point FFT with a Hann window, in dB re 1 µm. The 3D bevel and hypoid teeth use spherical involute profiles (base cone from sin δb = sin δ · cos α) along circular-arc, face-milled tooth traces, which is close to real geometry but not a full machine-setting simulation. Error values and efficiency ranges are illustrative, not measurements. Read the article: <a href="https://simbad001.github.io/gear-lapping/">Gear Lapping: More Than Noise</a>.</p>
 </div>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
@@ -317,6 +317,8 @@ function readouts(){
     rows.push([w?'Worm shaft, f₁':'Pinion shaft, f₁',fmtHz(F.f1)],[w?'Wheel shaft, f₂':(S.type==='spur'||S.type==='helical'?'Gear shaft, f₂':'Ring gear shaft, f₂'),fmtHz(F.f2)],
       ['Gear-mesh frequency',fmtHz(F.fm)],['Ratio',(c.z2/c.z1).toFixed(3)+' : 1'],['Hunting-tooth frequency',fmtHz(F.fm*g/(c.z1*c.z2))]);
     const eps=epsOf();if(eps>0)rows.push([w?'Contact overlap (assumed)':'Overlap ratio εβ',eps.toFixed(2)]);
+    if(S.type==='hypoid'&&window.THREE){const D=bevelDesign(c,true),dg=r=>(r*180/Math.PI).toFixed(1)+'°';
+      rows.push(['Pinion offset','14 % of ring Ø'],['Spiral angle, pinion / ring',dg(D.bp)+' / '+dg(D.bg)],['Pitch angle, pinion / ring',dg(D.d1)+' / '+dg(D.d2)])}
     if(w){const g2=Math.atan(c.z1/10),ph=Math.atan(0.05);rows.push(['Lead angle',(g2*180/Math.PI).toFixed(1)+'°'],['Efficiency, μ = 0.05','≈ '+Math.round(100*Math.tan(g2)/Math.tan(g2+ph))+' %'])}
     else rows.push(['Typical efficiency',T.eff]);
   }else{
@@ -604,8 +606,11 @@ let mode3d=false,R3=null;
 function note3d(){$('note3d').hidden=!(mode3d&&(S.type==='bevel'||S.type==='hypoid'))}
 function init3D(){
   const el=$('g3'),renderer=new THREE.WebGLRenderer({antialias:true});
-  renderer.setPixelRatio(Math.min(2,window.devicePixelRatio||1));renderer.outputEncoding=THREE.sRGBEncoding;
+  const touch=window.matchMedia('(pointer: coarse)').matches;
+  renderer.setPixelRatio(Math.min(touch?1.5:2,window.devicePixelRatio||1));renderer.outputEncoding=THREE.sRGBEncoding;
   el.insertBefore(renderer.domElement,el.firstChild);
+  if(touch)$('ov3hint').textContent='Drag to rotate · pinch to zoom · two-finger drag to pan';
+  new IntersectionObserver(es=>{if(R3)R3.visible=es[0].isIntersecting}).observe(el);
   const scene=new THREE.Scene(),camera=new THREE.PerspectiveCamera(32,1,0.1,5000);
   const controls=new THREE.OrbitControls(camera,renderer.domElement);controls.enableDamping=true;controls.dampingFactor=0.08;
   scene.add(new THREE.HemisphereLight(0xffffff,0x3a4652,0.85));
@@ -618,7 +623,7 @@ function init3D(){
     vc:new THREE.MeshStandardMaterial({vertexColors:true,metalness:0.45,roughness:0.42,flatShading:true}),
     mark:new THREE.MeshStandardMaterial({color:0xe0a63a,emissive:0x5a3a00,metalness:0.3,roughness:0.4}),
     sensor:new THREE.MeshStandardMaterial({color:0x1b232b,metalness:0.2,roughness:0.6})};
-  R3={renderer,scene,camera,controls,root,M,P:{},sig:'',fit:''};
+  R3={renderer,scene,camera,controls,root,M,P:{},sig:'',fit:'',visible:true};
   new ResizeObserver(size3D).observe(el);size3D();bg3D();
 }
 function size3D(){if(!R3)return;const el=$('g3'),w=Math.max(1,el.clientWidth),h=Math.max(1,el.clientHeight);
@@ -662,6 +667,77 @@ function spurBody(z,face,twist,holeR){const P=prof(z,1,false),hub=holeR||Math.ma
 function markAt(par,x,y,z,r){const s=new THREE.Mesh(new THREE.SphereGeometry(r,12,8),R3.M.mark);s.position.set(x,y,z);par.add(s)}
 function flashBall(r){const m=new THREE.Mesh(new THREE.SphereGeometry(r,16,12),new THREE.MeshBasicMaterial({color:0xffc04d,transparent:true,opacity:0,depthTest:false}));m.renderOrder=10;R3.root.add(m);return m}
 
+// ---- spiral bevel / hypoid geometry ----
+// Spherical involute (bevel counterpart of the involute): a point on a great circle rolling without slip on the base cone.
+// Base cone from the spherical law of sines: sin(db) = sin(delta)·cos(alpha). Returns the azimuth of the involute at polar angle th.
+function sphInv(db){const sdb=Math.sin(db),cdb=Math.cos(db);
+  return th=>{if(th<=db)return 0;const psi=Math.acos(Math.min(1,Math.cos(th)/cdb)),t=psi/sdb,cp=Math.cos(psi),sp=Math.sin(psi);
+    return Math.atan2(cp*sdb*Math.sin(t)-sp*Math.cos(t),cp*sdb*Math.cos(t)+sp*Math.sin(t))}}
+// Tooth outline on the sphere: [polar angle, azimuth, height fraction]; addendum 1 and dedendum 1.25 mean modules, 20° pressure angle
+function bevelProfile(z,delta,mm,Rm){
+  const tau=TAU/z,tTip=delta+Math.atan(mm/Rm),tRoot=delta-Math.atan(1.25*mm/Rm);
+  const inv=sphInv(Math.asin(Math.sin(delta)*Math.cos(20*Math.PI/180))),sg=inv(tTip)>=inv(delta)?1:-1;
+  const half=th=>Math.max(0.03*tau,0.24*tau-sg*(inv(th)-inv(delta))),pts=[],NF=6;
+  for(let k=0;k<z;k++){const c=k*tau;
+    for(let i=0;i<=NF;i++){const th=tRoot+(tTip-tRoot)*i/NF;pts.push([th,c-half(th),i/NF])}
+    pts.push([tTip,c,1]);
+    for(let i=NF;i>=0;i--){const th=tRoot+(tTip-tRoot)*i/NF;pts.push([th,c+half(th),i/NF])}
+    const hr=half(tRoot);for(let i=1;i<=2;i++)pts.push([tRoot,c+hr+(tau-2*hr)*i/3,0])}
+  return {pts,tTip,tRoot}}
+// Face-milled tooth trace: circular arc of cutter radius rc on the crown gear, spiral angle beta at mean cone distance Rm
+function arcTrace(Rm,beta,rc){const R0=Math.sqrt(Rm*Rm+rc*rc-2*Rm*rc*Math.sin(beta));
+  const g=s=>Math.acos(Math.max(-1,Math.min(1,(s*s+R0*R0-rc*rc)/(2*s*R0)))),g0=g(Rm),sg=g(Rm*1.001)>=g(Rm*0.999)?1:-1;
+  return s=>sg*(g(s)-g0)}
+// Sweep a spherical profile along the cone distance; optional conical bore at polar angle holeTh
+function loftSph(prof,holeTh,slices,colorFn){
+  const Pp=prof.pts,n=Pp.length,hn=holeTh>0?72:0,per=n+hn,Sn=slices.length;
+  const pos=new Float32Array(Sn*per*3),col=new Float32Array(Sn*per*3),idx=[],cc=new THREE.Color();let o=0;
+  const put=(x,y,z,u,v)=>{pos[o*3]=x;pos[o*3+1]=y;pos[o*3+2]=z;colorFn(u,v,cc);col[o*3]=cc.r;col[o*3+1]=cc.g;col[o*3+2]=cc.b;o++};
+  for(const sl of slices){for(const q of Pp){const st=Math.sin(q[0]),ph=q[1]+sl.dphi;put(sl.s*st*Math.cos(ph),sl.s*st*Math.sin(ph),sl.s*Math.cos(q[0]),sl.u,q[2])}
+    for(let i=0;i<hn;i++){const ph=-TAU*i/hn;put(sl.s*Math.sin(holeTh)*Math.cos(ph),sl.s*Math.sin(holeTh)*Math.sin(ph),sl.s*Math.cos(holeTh),sl.u,-1)}}
+  const ringsN=hn?[n,hn]:[n];let base=0;
+  for(const rn of ringsN){for(let j=0;j<Sn-1;j++)for(let i=0;i<rn;i++){const a=j*per+base+i,b=j*per+base+(i+1)%rn,c=(j+1)*per+base+(i+1)%rn,d=(j+1)*per+base+i;idx.push(a,b,c,a,c,d)}base+=rn}
+  const V2=k=>new THREE.Vector2(pos[k*3],pos[k*3+1]),cont=[],hole=[];for(let i=0;i<n;i++)cont.push(V2(i));for(let i=0;i<hn;i++)hole.push(V2(n+i));
+  const tri=THREE.ShapeUtils.triangulateShape(cont,hn?[hole]:[]),T=(Sn-1)*per,P2=[...cont,...hole];
+  for(const f of tri){let a=f[0],b=f[1],c=f[2];if((P2[b].x-P2[a].x)*(P2[c].y-P2[a].y)-(P2[b].y-P2[a].y)*(P2[c].x-P2[a].x)<0){const t=b;b=c;c=t}idx.push(a,c,b,T+a,T+b,T+c)}
+  const g=new THREE.BufferGeometry();g.setAttribute('position',new THREE.BufferAttribute(pos,3));g.setAttribute('color',new THREE.BufferAttribute(col,3));g.setIndex(idx);g.computeVertexNormals();return g}
+// Blank layout. Ring axis +Y with apex at the origin. The pinion axis is parallel to X, offset by E along Z (E = 0 for spiral bevel).
+// The pinion pitch cone is made tangent to the ring pitch cone at the mean point M, so the pinion axis lies on the ring-cone normal at M.
+// Hypoid: offset angle lambda = asin(E/A) and ring pitch angle = spiral-bevel angle · cos(lambda) (Gleason-style blank design);
+// pinion spiral angle = ring spiral angle + offset angle between the two pitch-cone generatrices at M.
+function bevelDesign(c,hyp){
+  const V=THREE.Vector3,z1=c.z1,z2=c.z2,R2o=z2/2,E=hyp?0.14*2*R2o:0,beta=c.beta*Math.PI/180;
+  let d2=Math.atan2(z2,z1);if(hyp)d2*=Math.cos(Math.asin(Math.min(0.9,E/(R2o+0.65*z1))));
+  const A2=R2o/Math.sin(d2),F=0.3*A2,Rm2=A2-F/2,rm2=Rm2*Math.sin(d2),mm2=2*rm2/z2;
+  let bp=beta,bg=beta,zeta=0,d=0,M,n,Q,apex,a1,eps=0;
+  for(let it=0;it<30;it++){
+    if(hyp)bg=Math.max(0.05,bp-eps);
+    const rm1=(z1/2)*mm2*Math.cos(bg)/Math.cos(bp);
+    M=new V(rm2*Math.cos(zeta),Rm2*Math.cos(d2),rm2*Math.sin(zeta));
+    n=new V(Math.cos(d2)*Math.cos(zeta),-Math.sin(d2),Math.cos(d2)*Math.sin(zeta));
+    d=rm1/Math.sqrt(Math.sin(d2)**2+(Math.cos(d2)*Math.sin(zeta))**2);
+    zeta=Math.asin(Math.max(-0.95,Math.min(0.95,E/(rm2+d*Math.cos(d2)))));
+    Q=M.clone().addScaledVector(n,d);apex=Q.clone().add(new V(-d/n.x,0,0));
+    a1=new V(Math.sign(M.x-apex.x)||1,0,0);
+    const g1=M.clone().sub(apex).normalize(),g2=M.clone().normalize();eps=Math.acos(Math.min(1,g1.dot(g2)));
+  }
+  const Rm1=M.distanceTo(apex),rm1=d*Math.sqrt(Math.sin(d2)**2+(Math.cos(d2)*Math.sin(zeta))**2);
+  const d1=Math.acos(Math.min(1,M.clone().sub(apex).normalize().dot(a1))),rc=0.9*Rm2;
+  const Z=a1,Xp=M.clone().sub(apex);Xp.addScaledVector(Z,-Xp.dot(Z)).normalize();const Yp=new V().crossVectors(Z,Xp);
+  const ring={z:z2,delta:d2,Rm:Rm2,hand:1,trace:arcTrace(Rm2,bg,rc),prof:bevelProfile(z2,d2,mm2,Rm2)};
+  const pin={z:z1,delta:d1,Rm:Rm1,trace:arcTrace(Rm1,bp,rc),prof:bevelProfile(z1,d1,2*rm1/z1,Rm1),X:Xp,Y:Yp,Z,apex};
+  // pinion hand: pick the one whose tooth trace at M runs parallel to the ring's
+  const Xr=new V(1,0,0),Yr=new V(0,0,-1),Zr=new V(0,1,0);
+  const trDir=(g,X,Y,Zv,o,h)=>{const p=s=>{const ph=h*g.trace(s)/Math.sin(g.delta)+(g===ring?Math.atan2(M.dot(Yr),M.dot(Xr)):0),st=Math.sin(g.delta);
+      return o.clone().addScaledVector(X,s*st*Math.cos(ph)).addScaledVector(Y,s*st*Math.sin(ph)).addScaledVector(Zv,s*Math.cos(g.delta))};
+    return p(g.Rm*1.01).sub(p(g.Rm*0.99)).normalize()};
+  const tR=trDir(ring,Xr,Yr,Zr,new V(),1);
+  pin.hand=Math.abs(trDir(pin,Xp,Yp,Z,apex,1).dot(tR))>=Math.abs(trDir(pin,Xp,Yp,Z,apex,-1).dot(tR))?1:-1;
+  // phases and turning direction: ring tooth space centred on M; surface velocities at M must agree
+  const vP=new V().crossVectors(Z,M.clone().sub(apex)),vR=new V().crossVectors(Zr,M);
+  const sR=vP.dot(vR)>=0?1:-1,offR=Math.atan2(M.dot(Yr),M.dot(Xr))+Math.PI/z2;
+  return {ring,pin,M,F,A2,R2o,E,sR,offR,bp,bg,d1,d2,eps};
+}
 function build3D(){
   const {root,M}=R3;
   root.traverse(o=>{if(o.geometry)o.geometry.dispose();if(o.material&&o.material.isMeshBasicMaterial)o.material.dispose()});
@@ -675,25 +751,27 @@ function build3D(){
     const a1=tb/r1*face/2,a2=-tb/r2*face/2;markAt(P.p1,r1*Math.cos(a1),r1*Math.sin(a1),face/2+0.15,0.35);markAt(P.p2,r2*Math.cos(a2),r2*Math.sin(a2),face/2+0.15,0.35);
     root.add(P.p1,P.p2);P.f.push(flashBall(0.9));P.f[0].position.set(r1,0,0);
   }else if(S.type==='bevel'||S.type==='hypoid'){
-    const z1=c.z1,z2=c.z2,hyp=S.type==='hypoid',tb=Math.tan(c.beta*Math.PI/180),d2=Math.atan2(z2,z1),d1=Math.PI/2-d2;
-    const A=(z2/2)/Math.sin(d2),F=0.3*A,sm=A-F/2,Sn=22;
+    const D=bevelDesign(c,S.type==='hypoid'),V=THREE.Vector3;
     const pt=lap?{u:0.5,v:0.48,ru:0.34,rv:0.36}:{u:0.2,v:0.8,ru:0.15,rv:0.16};
     const cG=new THREE.Color(0xc9a227),cW=new THREE.Color(0xd2d9de),cS=new THREE.Color(0xa7b3bd);
-    const colFn=Pf=>(u,rad,out)=>{if(rad<Pf.rf-0.05){out.copy(cS);return}const v=(rad-Pf.rf)/(Pf.ra-Pf.rf),du=(u-pt.u)/pt.ru,dv=(v-pt.v)/pt.rv;out.copy(du*du+dv*dv<1?cW:cG)};
-    const cone=(z,d,sign)=>{const Pf=prof(z,1,false),rm=sm*Math.sin(d),sl=[];for(let j=0;j<Sn;j++){const s=A-F+F*j/(Sn-1);sl.push({z:s*Math.cos(d),s:s/A,rot:sign*(s-sm)*tb/rm})}return {Pf,sl,rotH:sign*(A-sm)*tb/rm}};
-    // ring gear: axis = world Y
-    const R=cone(z2,d2,1),bore=(z2/2)*0.42,zh=A*Math.cos(d2),rr=(z2/2-1.25)*0.98,th=0.1*A;
-    P.p2=new THREE.Group();P.p2.add(Mesh(loft(R.Pf.pts,[circle(bore,48)],R.sl,colFn(R.Pf)),M.vc));
-    P.p2.add(Mesh(loft(circle(rr,96),[circle(bore,48)],lin(zh,zh+th,2,0)),M.steel));
-    for(let b=0;b<8;b++){const an=TAU*b/8,br=(rr+bore)/2;P.p2.add(Mesh(cyl(0.035*A,zh+th,zh+th+0.03*A,br*Math.cos(an),br*Math.sin(an)),M.dark))}
-    markAt(P.p2,R.Pf.ra*Math.cos(R.rotH),R.Pf.ra*Math.sin(R.rotH),zh+0.1,0.4);
-    const rf=new THREE.Group();rf.rotation.x=-Math.PI/2;rf.add(P.p2);root.add(rf);
-    // pinion: axis = world X
-    const Pn=cone(z1,d1,-1),zp=A*Math.cos(d1);
-    P.p1=new THREE.Group();P.p1.add(Mesh(loft(Pn.Pf.pts,[],Pn.sl,colFn(Pn.Pf)),M.vc),Mesh(cyl((z1/2)*0.45,zp,zp+0.55*A),M.dark));
-    markAt(P.p1,Pn.Pf.ra*Math.cos(Pn.rotH),Pn.Pf.ra*Math.sin(Pn.rotH),zp+0.1,0.4);
-    const pf=new THREE.Group();pf.rotation.y=Math.PI/2;pf.add(P.p1);if(hyp)pf.position.z=-0.18*(z2/2);root.add(pf);
-    P.f.push(flashBall(1.1));P.f[0].position.set(sm*Math.sin(d2),sm*Math.cos(d2),hyp?-0.09*(z2/2):0);
+    const colFn=(u,v,out)=>{if(v<0){out.copy(cS);return}const du=(u-pt.u)/pt.ru,dv=(v-pt.v)/pt.rv;out.copy(du*du+dv*dv<1?cW:cG)};
+    const frame=(X,Y,Z,pos)=>{const g=new THREE.Group();g.quaternion.setFromRotationMatrix(new THREE.Matrix4().makeBasis(X,Y,Z));g.position.copy(pos);return g};
+    // ring gear: axis along +Y, apex at the origin
+    const G=D.ring,Pi=D.pin,Sn=26;
+    const slices=(g,F)=>{const a=[];for(let j=0;j<Sn;j++){const s=g.Rm-F/2+F*j/(Sn-1);a.push({s,dphi:g.hand*g.trace(s)/Math.sin(g.delta),u:j/(Sn-1)})}return a};
+    P.p2=new THREE.Group();P.p2.add(Mesh(loftSph(G.prof,G.prof.tRoot-0.2,slices(G,D.F),colFn),M.vc));
+    const sh=G.Rm+D.F/2,zh=sh*Math.cos(G.prof.tRoot),rr=sh*Math.sin(G.prof.tRoot)*0.99,bore=D.R2o*0.42,web=0.1*D.A2;
+    P.p2.add(Mesh(loft(circle(rr,120),[circle(bore,48)],lin(zh-0.05,zh+web,2,0)),M.steel));
+    for(let b=0;b<8;b++){const an=TAU*b/8,br=(rr+bore)/2;P.p2.add(Mesh(cyl(0.035*D.A2,zh+web,zh+web+0.03*D.A2,br*Math.cos(an),br*Math.sin(an)),M.dark))}
+    {const dp=G.hand*G.trace(sh)/Math.sin(G.delta),t=G.prof.tTip;markAt(P.p2,sh*Math.sin(t)*Math.cos(dp),sh*Math.sin(t)*Math.sin(dp),sh*Math.cos(t),0.4)}
+    root.add(frame(new V(1,0,0),new V(0,0,-1),new V(0,1,0),new V()).add(P.p2));
+    // pinion: own axis and apex from the tangent pitch-cone solution (offset along Z for hypoid)
+    P.p1=new THREE.Group();const F1=1.1*D.F;P.p1.add(Mesh(loftSph(Pi.prof,0,slices(Pi,F1),colFn),M.vc));
+    const shp=Pi.Rm+F1/2;P.p1.add(Mesh(cyl(shp*Math.sin(Pi.prof.tRoot)*0.5,shp*Math.cos(Pi.prof.tRoot)-0.2,shp*Math.cos(Pi.prof.tRoot)+0.55*D.A2),M.dark));
+    {const dp=Pi.hand*Pi.trace(shp)/Math.sin(Pi.delta),t=Pi.prof.tTip;markAt(P.p1,shp*Math.sin(t)*Math.cos(dp),shp*Math.sin(t)*Math.sin(dp),shp*Math.cos(t),0.4)}
+    root.add(frame(Pi.X,Pi.Y,Pi.Z,Pi.apex).add(P.p1));
+    P.offR=D.offR;P.sR=D.sR;
+    P.f.push(flashBall(1.1));P.f[0].position.copy(D.M);
     root.rotation.x=Math.PI; // ring underneath with its teeth facing up, as on a lapping machine
   }else if(S.type==='worm'){
     const st=c.z1,z2=c.z2,rw=5,r2=z2/2,a=rw+r2,lead=st*Math.PI,k=TAU/lead,L=Math.max(7*Math.PI,1.1*r2);
@@ -731,7 +809,7 @@ function update3D(){
   if(isPair()){const k=Math.floor(F.fm*t);if(lastK!==null&&k!==lastK)flash=1;lastK=k;const tau2=TAU/c.z2;
     if(S.type==='spur'||S.type==='helical'){P.p1.rotation.z=th;P.p2.rotation.z=Math.PI+tau2/2-th*c.z1/c.z2+jit(tau2)}
     else if(S.type==='worm'){P.p1.rotation.z=th+P.s0;P.p2.rotation.z=Math.PI/2+tau2/2+th*c.z1/c.z2+jit(tau2)}
-    else{P.p1.rotation.z=Math.PI/2+th;P.p2.rotation.z=tau2/2-th*c.z1/c.z2+jit(tau2)}
+    else{P.p1.rotation.z=th;P.p2.rotation.z=P.offR+P.sR*th*c.z1/c.z2+jit(tau2)}
     P.f[0].material.opacity=flash*Math.min(1,0.35+Math.abs(te)/12);
   }else{
     const {zs,zp,zr,np}=F,thc=th*zs/(zs+zr),tp=TAU/zp,tr=TAU/zr,a=(zs+zp)/2;
@@ -745,6 +823,7 @@ function update3D(){
   $('ov3te').textContent=(isPair()?'TE ':'Sensor ')+(te>=0?'+':'−')+Math.abs(te).toFixed(2)+' µm';
 }
 function render3D(){
+  if(!R3.visible||document.hidden)return;
   const c=cfg(),sig=[S.type,c.z1,c.z2,c.beta,c.np,S.finish].join('|');
   if(sig!==R3.sig){R3.sig=sig;build3D();if(R3.fit!==S.type){R3.fit=S.type;fit3D()}}
   update3D();R3.controls.update();R3.renderer.render(R3.scene,R3.camera);
