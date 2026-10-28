@@ -1,0 +1,168 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Listening to Gears: The Physics of the Gear Mesh</title>
+<meta name="description" content="How transmission error, gear-mesh frequency, harmonics and sidebands work, why gear types sound different, what lapping changes in the spectrum and why this precision matters in robotics, medical technology and machine tools.">
+<meta name="author" content="Mustapha Olunrebi">
+<link rel="canonical" href="https://simbad001.github.io/gear-lapping/listening-to-gears/">
+<meta property="og:type" content="article">
+<meta property="og:site_name" content="Mustapha Olunrebi">
+<meta property="og:title" content="Listening to Gears: The Physics of the Gear Mesh">
+<meta property="og:description" content="Transmission error, gear-mesh frequency, sidebands and contact overlap: how to read what a gear pair is telling you, and why the precision behind it matters.">
+<meta property="og:url" content="https://simbad001.github.io/gear-lapping/listening-to-gears/">
+<meta property="og:image" content="https://simbad001.github.io/gear-lapping/listening-to-gears/cover.jpg">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta property="og:image:alt" content="Spiral bevel gear pair in mesh on a test-rolling machine">
+<meta property="article:author" content="Mustapha Olunrebi">
+<meta name="twitter:card" content="summary_large_image">
+<style>
+:root{--bg:#ffffff;--text:#1e262c;--muted:#55636c;--accent:#9a7020;--soft:#eef1f3;--line:#d6dce0}
+@media (prefers-color-scheme:dark){:root{--bg:#161b1f;--text:#e8ecef;--muted:#a3afb7;--accent:#d9b25a;--soft:#222a30;--line:#33404a}}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--text);font:18px/1.65 Georgia,"Times New Roman",serif}
+main{max-width:720px;margin:0 auto;padding:48px 20px 80px}
+h1{font:700 2.4rem/1.15 Georgia,serif;margin:0 0 .4rem}
+.byline{font:15px/1.4 system-ui,-apple-system,"Segoe UI",Arial,sans-serif;color:var(--muted);margin:0 0 2rem}
+h2{font:700 1.5rem/1.25 Georgia,serif;margin:2.6rem 0 .8rem}
+p,ul,ol{margin:0 0 1.1rem}
+li{margin:.35rem 0}
+.lead{font-size:1.12rem}
+.key{background:var(--soft);padding:16px 20px;border-radius:8px}
+.formula{margin:0 0 1.2rem;padding:12px 16px;border-left:3px solid var(--accent);background:var(--soft);border-radius:0 8px 8px 0;font:italic 1.15rem/1.6 "Cambria Math",Cambria,Georgia,serif;overflow-x:auto;white-space:nowrap}
+.formula .frac{display:inline-flex;flex-direction:column;vertical-align:middle;text-align:center;margin:0 .15em}
+.formula .frac span:first-child{border-bottom:1px solid currentColor;padding:0 .2em}
+.formula .frac span:last-child{padding:0 .2em}
+figure{margin:1.6rem auto;max-width:540px}
+figure img{width:100%;height:auto;border-radius:8px;display:block}
+figcaption{font:14px/1.5 system-ui,-apple-system,"Segoe UI",Arial,sans-serif;color:var(--muted);margin-top:.6rem}
+.credit{font-style:italic;margin-bottom:.3rem}
+.tablewrap{overflow-x:auto;margin:0 0 1.2rem}
+table{border-collapse:collapse;width:100%;min-width:560px;font:15px/1.45 system-ui,-apple-system,"Segoe UI",Arial,sans-serif}
+th,td{text-align:left;vertical-align:top;padding:10px 12px;border-bottom:1px solid var(--line)}
+th{background:var(--soft)}
+a{color:var(--accent)}
+.note{font:14px/1.5 system-ui,-apple-system,"Segoe UI",Arial,sans-serif;color:var(--muted)}
+footer{margin-top:3rem;padding-top:1rem;border-top:1px solid var(--line);font:14px/1.5 system-ui,-apple-system,"Segoe UI",Arial,sans-serif;color:var(--muted)}
+@media (max-width:600px){body{font-size:17px}h1{font-size:1.9rem}main{padding:32px 16px 60px}.formula{font-size:1rem}}
+</style>
+</head>
+<body>
+<main>
+<article>
+<h1>Listening to Gears: The Physics of the Gear Mesh</h1>
+<p class="byline">Mustapha Olunrebi · October 2026</p>
+
+<p class="lead">When a gear pair runs, it produces a tone. Its pitch is set by the tooth count and speed. How loud that tone is depends on how accurately the teeth were made. Small modulations around it show which shaft or which tooth is at fault. In my previous article, <a href="../"><em>Gear Lapping: More Than Noise</em></a>, I described lapping as a way to lower that tone. This article explains the physics behind that tone.</p>
+<p class="key">Put simply, tooth count and speed decide the frequencies you see in a gear's vibration, manufacturing quality decides how strong they are, and <strong>reading the spectrum tells you which part is at fault.</strong></p>
+
+<figure>
+<img src="test-rolling-machine.jpg" width="1080" height="1440" alt="Spiral bevel gear pair mounted on the two spindles of a test-rolling machine">
+<figcaption><div class="credit">Photo: ESA Eppinger GmbH</div>A spiral bevel gear pair on a test-rolling machine. The larger gear (left) and the pinion (right) are held on two spindles whose axes meet at an angle. Running the pair here under controlled conditions is where its contact pattern, transmission error and mesh noise are checked.</figcaption>
+</figure>
+
+<h2>Transmission error: where the vibration starts</h2>
+<p>If two gears were perfect and perfectly rigid, the driven gear would turn at exactly the ratio of the tooth counts, with no fluctuation. This is however mythical and theoretical as real gears never do. <strong>Transmission error (TE)</strong> is the difference between where the driven gear should be and where it actually is, usually expressed as a distance along the line of action in micrometres.</p>
+<div class="formula">TE(t) = r<sub>b2</sub> θ<sub>2</sub>(t) − r<sub>b1</sub> θ<sub>1</sub>(t)</div>
+<p>Three things cause it. The tooth flanks are never exact involutes, and those small profile and lead deviations repeat at every tooth. The mesh stiffness changes as the number of teeth in contact changes, so the pair deflects unevenly under load. Pitch errors and runout, where teeth are unevenly spaced or a gear sits off-centre on its shaft, add errors that repeat once per revolution instead of once per tooth.</p>
+<p>TE is a tiny motion, a few micrometres, but it acts like a forcing displacement between two stiff bodies. The resulting force fluctuation travels through shafts and bearings into the housing, which radiates it as sound. Every frequency in a gear noise spectrum traces back to how TE repeats in time.</p>
+
+<h2>Gear-mesh frequency and its harmonics</h2>
+<p>The part of TE that repeats at every tooth engagement produces the dominant tone, the <strong>gear-mesh frequency (GMF)</strong>:</p>
+<div class="formula">f<sub>GMF</sub> = <span class="frac"><span>z<sub>1</sub> · n<sub>1</sub></span><span>60</span></span> = <span class="frac"><span>z<sub>2</sub> · n<sub>2</sub></span><span>60</span></span></div>
+<p>Here z is the number of teeth and n the shaft speed in rpm. GMF is the same whichever gear you count from, because both gears pass the same number of teeth through the mesh per second.</p>
+<p>For instance, a bevel pair: a 12-tooth pinion at 3000 rpm driving a 37-tooth gear.</p>
+<ul>
+<li>Pinion shaft frequency: 3000 / 60 = <strong>50 Hz</strong></li>
+<li>Gear shaft frequency: 50 × 12 / 37 = <strong>16.2 Hz</strong></li>
+<li>Gear-mesh frequency: 12 × 50 = <strong>600 Hz</strong></li>
+</ul>
+<p>TE is not a pure sine wave. Each engagement has a shape: a tooth picks up load, carries it and hands it on. The spectrum therefore shows <strong>harmonics</strong> at 2× GMF (1200 Hz) and 3× GMF (1800 Hz). Their relative heights describe the shape of the error. Strong higher harmonics point to sharp load transfer, for example missing tip relief or a contact ratio that is too low.</p>
+<p>GMF depends only on tooth count and speed, never on quality. A perfect gear and a damaged gear whine at the same pitch, what differs is how loud the tone is and what surrounds it.</p>
+
+<h2>Sidebands: which shaft is at fault</h2>
+<p>Some errors repeat once per revolution, not once per tooth. A gear with <strong>runout</strong> (eccentricity) moves closer to and further from its mate as it turns, so the mesh is pressed harder on one side of the revolution than the other. The mesh tone gets louder and quieter once per turn. In signal terms, the GMF carrier is <strong>amplitude-modulated</strong> by the shaft frequency:</p>
+<div class="formula">x(t) = [1 + m · cos(2π f<sub>shaft</sub> t)] · cos(2π f<sub>GMF</sub> t)</div>
+<p>In the spectrum this modulation appears as <strong>sidebands</strong>, smaller peaks on either side of GMF at f<sub>GMF</sub> ± f<sub>shaft</sub>. Their spacing tells you which shaft is responsible:</p>
+<ul>
+<li>Sidebands at <strong>600 ± 50 Hz</strong> (550 and 650 Hz) point to the pinion, which turns at 50 Hz.</li>
+<li>Sidebands at <strong>600 ± 16.2 Hz</strong> point to the gear.</li>
+</ul>
+<p>The height of the sidebands relative to GMF indicates how strong the modulation is. Accumulated pitch error behaves the same way. A single damaged tooth produces a short impact once per revolution, which spreads into a whole family of sidebands at that shaft's frequency.</p>
+<p>One more frequency is worth knowing: the <strong>hunting-tooth frequency</strong>. This is how often the same pair of teeth meets again:</p>
+<div class="formula">f<sub>HT</sub> = <span class="frac"><span>f<sub>GMF</sub> · gcd(z<sub>1</sub>, z<sub>2</sub>)</span><span>z<sub>1</sub> · z<sub>2</sub></span></span></div>
+<p>For 12 and 37 teeth, which share no common factor, f<sub>HT</sub> = 600 / 444 = <strong>1.35 Hz</strong>. Every tooth meets every other tooth before the pattern repeats, which spreads wear evenly. This is why designers prefer tooth counts with no common factor. A defect on one pinion tooth and one gear tooth only coincides at this slow rate, so it shows up as a slow beat in the time signal.</p>
+
+<h2>Contact overlap: why gear types sound different</h2>
+<p>A spur gear tooth engages across its whole face width at once, so load arrives and leaves abruptly. On helical, spiral bevel and hypoid gears, the teeth are inclined. Each tooth enters the mesh gradually from one end of the face to the other, and several teeth share the load at any moment. This is measured by the <strong>face (overlap) contact ratio</strong>:</p>
+<div class="formula">ε<sub>β</sub> = <span class="frac"><span>b · tan β</span><span>π · m</span></span></div>
+<p>Here b is the face width, β the helix or spiral angle, and m the module. The more the engagements overlap, the more the per-tooth fluctuations average out. The n-th mesh harmonic is attenuated roughly as |sinc(n · ε<sub>β</sub>)|. When ε<sub>β</sub> is close to a whole number, the stiffness variation largely cancels. This is why a well-designed helical pair can be several decibels quieter than a spur pair with the same tooth count.</p>
+
+<figure>
+<img src="gear-mesh-close-up.jpg" width="1080" height="1440" alt="Close-up of the spiral bevel mesh showing the curved teeth in contact">
+<figcaption><div class="credit">Photo: ESA Eppinger GmbH</div>Close-up of the mesh. The curved spiral teeth enter contact gradually from one end of the face to the other, so several teeth share the load at once. This overlap is why spiral bevel gears run quieter than straight bevel gears.</figcaption>
+</figure>
+
+<div class="tablewrap"><table>
+<thead><tr><th>Gear type</th><th>Tooth engagement</th><th>Sliding</th><th>Spectral signature</th><th>Typical efficiency</th></tr></thead>
+<tbody>
+<tr><td>Spur</td><td>Whole face at once, ε<sub>β</sub> = 0</td><td>Low</td><td>Strong GMF and clear harmonics</td><td>97–99 %</td></tr>
+<tr><td>Helical</td><td>Gradual, ε<sub>β</sub> ≈ 1.2 at 20°</td><td>Low</td><td>Lower GMF, harmonics strongly attenuated</td><td>97–99 %</td></tr>
+<tr><td>Straight bevel</td><td>Whole face at once, like spur, on 90° axes</td><td>Low</td><td>Spur-like, strong GMF</td><td>97–99 %</td></tr>
+<tr><td>Spiral bevel</td><td>Gradual along a curved tooth, ε<sub>β</sub> ≈ 1.8 at 35°</td><td>Moderate</td><td>Smooth GMF, sensitive to mounting and contact pattern</td><td>96–99 %</td></tr>
+<tr><td>Hypoid</td><td>Gradual, offset axes, ε<sub>β</sub> ≈ 2.5 at 45°</td><td>High (lengthwise sliding)</td><td>Quiet GMF but higher broadband friction noise</td><td>90–96 %</td></tr>
+<tr><td>Worm</td><td>Continuous line contact, ε<sub>β</sub> ≈ 2.4 assumed</td><td>Very high</td><td>Low tonal content, more broadband noise, GMF = worm starts × worm speed</td><td>Depends on lead angle (about 66 % for a single start at μ = 0.05)</td></tr>
+<tr><td>Planetary</td><td>Several planets mesh at once</td><td>Low</td><td>GMF plus planet-pass sidebands at carrier frequency</td><td>97–99 % per stage</td></tr>
+</tbody>
+</table></div>
+<p>Two cases need a note. For the <strong>worm</strong>, efficiency follows the lead angle γ and the friction angle φ: η = tan γ / tan(γ + φ). With μ = 0.05, a single-start worm reaches only about two-thirds. For the <strong>planetary</strong> stage, the sensor sits on the ring gear. Each planet passes the sensor in turn, so the mesh tone swells and fades at the carrier rate. With a 21-tooth sun at 3000 rpm and 24-tooth planets (69-tooth ring), the carrier turns at 11.7 Hz and GMF is 805 Hz.</p>
+<p class="note">The ε<sub>β</sub> values are examples for a face width of about 10 modules (helical) and 8 modules (bevel and hypoid). The efficiency ranges are typical values, not test results.</p>
+
+<h2>What lapping changes in the spectrum</h2>
+<p>Lapping does not move any frequency. Tooth counts and speeds stay the same, so GMF, its harmonics and the sideband positions stay exactly where they were. What changes is the <strong>amplitudes</strong>. The lap wears down the high spots that make up TE, evens out tooth-to-tooth spacing and reduces the effect of small runout, because the pair is finished against itself.</p>
+<p>An illustrative example of error levels before and after lapping:</p>
+<div class="tablewrap"><table>
+<thead><tr><th>Error source</th><th>Unlapped</th><th>Lapped</th><th>Shows up as</th></tr></thead>
+<tbody>
+<tr><td>Mesh error amplitude</td><td>8 µm</td><td>3 µm</td><td>Height of GMF and its harmonics</td></tr>
+<tr><td>Tooth-to-tooth spacing error</td><td>5 µm</td><td>1.2 µm</td><td>Irregular per-tooth pattern, a raised floor between peaks</td></tr>
+<tr><td>Runout</td><td>15 µm</td><td>9 µm</td><td>Height of the sidebands at GMF ± shaft frequency</td></tr>
+</tbody>
+</table></div>
+<p>Because the GMF amplitude scales with TE, cutting the mesh error from 8 to 3 µm lowers the 1× GMF peak by 20 · log<sub>10</sub>(3/8) ≈ <strong>−8.5 dB</strong>. The sidebands shrink as well, and the noise floor between the peaks drops as the spacing errors are evened out. The spectrum ends up with fewer and clearer peaks.</p>
+<p>Lower mesh amplitudes and fewer sidebands are also what condition monitoring follows over a gear's life.</p>
+
+<h2>Reading a gear spectrum in practice</h2>
+<p>With the frequencies worked out in advance, a vibration spectrum becomes a checklist:</p>
+<ol>
+<li>Work out the expected lines first: both shaft frequencies, GMF with its 2× and 3× harmonics, and the hunting-tooth frequency. Mark them on the plot before you look at the data.</li>
+<li>Compare the GMF level with a baseline. If it rises over time, TE is growing, from wear, pitting or a contact pattern that has moved.</li>
+<li>Measure the sideband spacing. It equals the speed of the shaft at fault. A wide family of sidebands usually means a local defect rather than plain eccentricity.</li>
+<li>Watch the harmonics. When 2× GMF grows relative to 1×, the tooth shape or load sharing has changed, often from wear or misalignment.</li>
+<li>Look between the peaks too. A rising broadband floor points to friction, poor lubrication or surface damage, especially on hypoid and worm sets.</li>
+</ol>
+<p>Resolution matters. Separating sidebands 16 Hz apart near 600 Hz needs a resolution of a few hertz or better, which means a measurement record of at least about one second. A Hann window then keeps the sidebands as separate peaks rather than merging them into the GMF line.</p>
+
+<h2>Why this precision matters</h2>
+<p>The gears in these photos are small enough to hold between two fingers, and the errors that matter on them are a few micrometres. That is not perfectionism. It is what the industries that use such gears now expect from them.</p>
+<p>Take robotics. Every joint of a robot arm has a gear stage between the motor and the link. Backlash or transmission error in that stage turns into a position error at the gripper, and the longer the arm, the bigger that error gets at the tool. The mesh vibration can also excite the arm itself, so the robot shakes a little when it stops at a point. If it has to place a part to within a few hundredths of a millimetre, thousands of times a day, a poor gear cannot hide.</p>
+<p>In medical technology the margin is even smaller. A surgical robot must move smoothly and repeatably, with no jerk that the surgeon feels through the controls. Dental handpieces run tiny bevel gears at very high speed, which pushes the mesh tone up into the range where our hearing is most sensitive. A 12-tooth pinion at 20,000 rpm already meshes at 4 kHz, right next to the patient's ear. On top of that, these gears have to survive repeated cleaning and sterilisation without losing their fit.</p>
+<p>Machine tools are no different. In angle heads and driven tools, any error in the gear stage ends up on the workpiece as chatter marks or a poor surface finish.</p>
+<p>In all of these fields, a gear is no longer judged only by whether it breaks. It is judged by how precisely it moves, how quietly it runs and how long it keeps doing both. Transmission error, the mesh tone and its sidebands are how we measure exactly that, and it is why steps like lapping and a final run on the test-rolling machine are still worth the effort.</p>
+
+<h2>What this picture can and cannot tell you</h2>
+<p>This frequency picture is only useful when its limits are clear.</p>
+<p>What it gives reliably is the frequencies. Shaft speeds, GMF and its harmonics, the hunting tooth, planet-pass and sideband positions all follow from geometry and speed, and so does the way contact overlap damps the harmonics.</p>
+<p>The amplitudes are another matter. The TE values in this article are examples chosen to show the trend, not calculated from tooth geometry and load, so the −8.5 dB lapping effect shows the mechanism rather than predicting a specific gear set. Gearbox dynamics, housing resonances, loaded tooth contact analysis, real micro-geometry such as crowning and tip relief, and strength ratings such as ISO 6336 are all left out.</p>
+<p>Use it to understand what a spectrum means and to identify which peak belongs to which component. For design decisions or noise predictions, measured TE or a full contact analysis is still required.</p>
+
+<h2>Conclusion</h2>
+<p>A gear mesh gives away a lot about its own condition. Tooth count and speed set the pitch. Transmission error sets the loudness. Runout and pitch errors add sidebands that point to the responsible shaft. Contact overlap explains why helical, spiral bevel and hypoid gears run quieter than spur and straight bevel gears. Lapping does not change any of these frequencies, it lowers the amplitudes, and the spectrum shows it.</p>
+<p>The same reading turns a vibration measurement into a diagnosis: which gear, which fault, and whether it is getting worse. It also closes the loop with my first article, <a href="../"><em>Gear Lapping: More Than Noise</em></a>. The benefit of lapping is not only something you hear, you can measure it.</p>
+</article>
+<footer>© 2026 Mustapha Olunrebi · <a href="https://www.linkedin.com/in/mustapha-olunrebi-b98289125">LinkedIn</a></footer>
+</main>
+</body>
+</html>
